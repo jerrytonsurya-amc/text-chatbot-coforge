@@ -9,6 +9,8 @@
     "dev:server": "node server/index.js",
     "build": "vite build",
     "ingest": "node server/ingest.js",
+    "ingest:fast": "SKIP_EMBED=1 node server/ingest.js",
+    "embed": "node server/embed-index.js",
     "preview": "vite preview"
   },
   "dependencies": {

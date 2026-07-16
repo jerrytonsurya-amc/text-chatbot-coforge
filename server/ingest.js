@@ -153,6 +153,19 @@ async function ingest() {
   fs.writeFileSync(INDEX_PATH, JSON.stringify(index, null, 2));
 
   console.log(`\nDone! Indexed ${allChunks.length} chunks -> ${INDEX_PATH}`);
+
+  if (process.env.SKIP_EMBED === '1') {
+    console.log('Skipping embeddings (SKIP_EMBED=1)');
+    return;
+  }
+
+  const { generateChunkEmbeddings, saveEmbeddings } = await import('./embeddings.js');
+  console.log('\nGenerating embeddings with gemini-embedding-2...');
+  const embeddingData = await generateChunkEmbeddings(allChunks, (batch, total, done, all) => {
+    console.log(`  Batch ${batch}/${total} (${done}/${all} chunks)`);
+  });
+  saveEmbeddings(embeddingData);
+  console.log('Embeddings complete.');
 }
 
 ingest().catch((err) => {

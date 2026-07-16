@@ -79,7 +79,9 @@ export default function App() {
       await addMessage(
         threadId,
         'assistant',
-        `Sorry, I encountered an error: ${err.message}. Please try again.`
+        err.message?.includes('rate-limited')
+          ? '⏳ The AI service is temporarily busy due to rate limits. Please wait about a minute and try again.'
+          : `Sorry, I encountered an error: ${err.message}. Please try again.`
       );
     } finally {
       setIsLoading(false);

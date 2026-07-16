@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { embedText, loadEmbeddings, cosineSimilarity } from './embeddings.js';
+import { isRateLimitError } from './retry.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_PATH = path.join(__dirname, '..', 'data', 'knowledge-index.json');
@@ -41,7 +43,7 @@ function scoreChunk(chunk, queryTokens) {
   return score;
 }
 
-export function retrieveRelevantChunks(query, limit = 8) {
+function keywordRetrieve(query, limit) {
   const index = loadIndex();
   const queryTokens = tokenize(query);
 
@@ -50,7 +52,7 @@ export function retrieveRelevantChunks(query, limit = 8) {
   }
 
   const scored = index.chunks
-    .map((chunk) => ({ chunk, score: scoreChunk(chunk, queryTokens) }))
+    .map((chunk, idx) => ({ chunk, idx, score: scoreChunk(chunk, queryTokens) }))
     .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score);
 
@@ -59,6 +61,41 @@ export function retrieveRelevantChunks(query, limit = 8) {
   }
 
   return scored.slice(0, limit).map((item) => item.chunk);
+}
+
+async function embeddingRetrieve(query, limit) {
+  const index = loadIndex();
+  const embeddings = loadEmbeddings();
+
+  if (!embeddings || embeddings.vectors.length !== index.chunks.length) {
+    return keywordRetrieve(query, limit);
+  }
+
+  try {
+    const queryVector = await embedText(query, 'RETRIEVAL_QUERY');
+    const scored = index.chunks
+      .map((chunk, idx) => ({
+        chunk,
+        score: cosineSimilarity(queryVector, embeddings.vectors[idx]),
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    return scored.slice(0, limit).map((item) => item.chunk);
+  } catch (err) {
+    if (isRateLimitError(err)) {
+      console.warn('Query embedding rate-limited, falling back to keyword search');
+      return keywordRetrieve(query, limit);
+    }
+    throw err;
+  }
+}
+
+export async function retrieveRelevantChunks(query, limit = 6) {
+  const embeddings = loadEmbeddings();
+  if (embeddings) {
+    return embeddingRetrieve(query, limit);
+  }
+  return keywordRetrieve(query, limit);
 }
 
 export function buildContext(chunks) {
@@ -72,9 +109,13 @@ export function buildContext(chunks) {
 
 export function getIndexStats() {
   const index = loadIndex();
+  const embeddings = loadEmbeddings();
   return {
     totalChunks: index.totalChunks,
     categories: index.categories,
     createdAt: index.createdAt,
+    embeddings: embeddings
+      ? { model: embeddings.model, dimension: embeddings.dimension, chunkCount: embeddings.chunkCount }
+      : null,
   };
 }
