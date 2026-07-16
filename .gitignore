@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+data/knowledge-index.json
+data/extracted/
+.DS_Store
+*.log

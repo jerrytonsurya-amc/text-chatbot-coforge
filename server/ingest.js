@@ -1,0 +1,140 @@
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import pdf from 'pdf-parse/lib/pdf-parse.js';
+import XLSX from 'xlsx';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.join(__dirname, '..');
+const EXTRACTED_DIR = path.join(ROOT, 'data', 'extracted');
+const INDEX_PATH = path.join(ROOT, 'data', 'knowledge-index.json');
+const EXCEL_PATH = path.join(ROOT, 'Coforge Model_Final June 2026.xlsx');
+
+const CHUNK_SIZE = 1200;
+const CHUNK_OVERLAP = 200;
+
+function chunkText(text, source, category) {
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  if (!cleaned) return [];
+
+  const chunks = [];
+  let start = 0;
+
+  while (start < cleaned.length) {
+    const end = Math.min(start + CHUNK_SIZE, cleaned.length);
+    let slice = cleaned.slice(start, end);
+
+    if (end < cleaned.length) {
+      const lastSpace = slice.lastIndexOf(' ');
+      if (lastSpace > CHUNK_SIZE * 0.6) {
+        slice = slice.slice(0, lastSpace);
+      }
+    }
+
+    chunks.push({
+      id: `${source}-${chunks.length}`,
+      source,
+      category,
+      text: slice.trim(),
+    });
+
+    if (end >= cleaned.length) break;
+    start += slice.length - CHUNK_OVERLAP;
+    if (start < 0) start = 0;
+  }
+
+  return chunks;
+}
+
+async function extractPdf(filePath, category) {
+  const buffer = fs.readFileSync(filePath);
+  const data = await pdf(buffer);
+  const source = path.basename(filePath);
+  return chunkText(data.text, source, category);
+}
+
+function extractExcel(filePath) {
+  const workbook = XLSX.readFile(filePath);
+  const chunks = [];
+
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+    const lines = rows
+      .map((row) => row.filter((cell) => cell !== '' && cell != null).join(' | '))
+      .filter(Boolean);
+
+    const text = `Sheet: ${sheetName}\n${lines.join('\n')}`;
+    chunks.push(...chunkText(text, `Coforge Model - ${sheetName}`, 'Financial Model'));
+  }
+
+  return chunks;
+}
+
+async function walkPdfs(dir, category) {
+  const chunks = [];
+  if (!fs.existsSync(dir)) return chunks;
+
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      chunks.push(...(await walkPdfs(fullPath, category)));
+    } else if (entry.name.toLowerCase().endsWith('.pdf')) {
+      try {
+        console.log(`Processing: ${fullPath}`);
+        const pdfChunks = await extractPdf(fullPath, category);
+        chunks.push(...pdfChunks);
+        console.log(`  -> ${pdfChunks.length} chunks`);
+      } catch (err) {
+        console.warn(`  Skipped ${fullPath}: ${err.message}`);
+      }
+    }
+  }
+
+  return chunks;
+}
+
+async function ingest() {
+  console.log('Starting document ingestion...\n');
+
+  const allChunks = [];
+
+  const categories = [
+    { dir: path.join(EXTRACTED_DIR, 'AR'), category: 'Annual Reports' },
+    { dir: path.join(EXTRACTED_DIR, 'PPT'), category: 'Investor Presentations' },
+    { dir: path.join(EXTRACTED_DIR, 'Transcripts'), category: 'Earnings Transcripts' },
+  ];
+
+  for (const { dir, category } of categories) {
+    console.log(`\nCategory: ${category}`);
+    const chunks = await walkPdfs(dir, category);
+    allChunks.push(...chunks);
+  }
+
+  if (fs.existsSync(EXCEL_PATH)) {
+    console.log('\nCategory: Financial Model');
+    console.log(`Processing: ${EXCEL_PATH}`);
+    const excelChunks = extractExcel(EXCEL_PATH);
+    allChunks.push(...excelChunks);
+    console.log(`  -> ${excelChunks.length} chunks`);
+  }
+
+  const index = {
+    createdAt: new Date().toISOString(),
+    totalChunks: allChunks.length,
+    categories: [...new Set(allChunks.map((c) => c.category))],
+    chunks: allChunks,
+  };
+
+  fs.mkdirSync(path.dirname(INDEX_PATH), { recursive: true });
+  fs.writeFileSync(INDEX_PATH, JSON.stringify(index, null, 2));
+
+  console.log(`\nDone! Indexed ${allChunks.length} chunks -> ${INDEX_PATH}`);
+}
+
+ingest().catch((err) => {
+  console.error('Ingestion failed:', err);
+  process.exit(1);
+});

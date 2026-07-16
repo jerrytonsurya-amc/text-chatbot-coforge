@@ -1,0 +1,155 @@
+.chat-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #212121;
+}
+
+.chat-header {
+  padding: 14px 24px;
+  border-bottom: 1px solid #2a2a2a;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: #ececec;
+}
+
+.messages-container {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.welcome-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.welcome-screen h1 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #ececec;
+  margin: 0 0 12px;
+}
+
+.welcome-screen p {
+  font-size: 15px;
+  color: #888;
+  margin: 0 0 32px;
+  max-width: 480px;
+}
+
+.suggestions {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  max-width: 640px;
+  width: 100%;
+}
+
+.suggestion-card {
+  padding: 16px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.suggestion-card:hover {
+  background: #333;
+  border-color: #4a4a4a;
+}
+
+.suggestion-card .title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #ececec;
+  margin-bottom: 4px;
+}
+
+.suggestion-card .desc {
+  font-size: 12px;
+  color: #888;
+}
+
+.chat-input-area {
+  padding: 16px 24px 24px;
+  background: linear-gradient(transparent, #212121 20%);
+}
+
+.chat-input-wrapper {
+  max-width: 768px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.chat-input-box {
+  display: flex;
+  align-items: flex-end;
+  background: #2f2f2f;
+  border: 1px solid #4a4a4a;
+  border-radius: 16px;
+  padding: 12px 16px;
+  transition: border-color 0.15s;
+}
+
+.chat-input-box:focus-within {
+  border-color: #666;
+}
+
+.chat-input-box textarea {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ececec;
+  font-size: 15px;
+  font-family: inherit;
+  resize: none;
+  max-height: 200px;
+  line-height: 1.5;
+  padding: 0;
+}
+
+.chat-input-box textarea::placeholder {
+  color: #666;
+}
+
+.send-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: #ececec;
+  color: #212121;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+  transition: opacity 0.15s;
+}
+
+.send-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.send-btn:not(:disabled):hover {
+  background: #fff;
+}
+
+.input-hint {
+  text-align: center;
+  font-size: 11px;
+  color: #555;
+  margin-top: 8px;
+}
