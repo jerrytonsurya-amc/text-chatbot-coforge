@@ -2,6 +2,8 @@ const answerCache = new Map();
 const CACHE_MAX = 100;
 const CACHE_TTL_MS = 30 * 60 * 1000;
 
+import { config } from './config.js';
+
 let resolvedModel = null;
 
 export function getCachedAnswer(key) {
@@ -24,7 +26,7 @@ export function setCachedAnswer(key, value) {
 
 export function getActiveModel() {
   if (resolvedModel) return resolvedModel;
-  resolvedModel = process.env.GEMINI_MODEL || 'gemini-flash-latest';
+  resolvedModel = config.chatModel;
   return resolvedModel;
 }
 

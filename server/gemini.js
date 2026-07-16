@@ -8,6 +8,7 @@ import {
   isRateLimitError,
   formatRateLimitError,
 } from './retry.js';
+import { config } from './config.js';
 
 const SYSTEM_PROMPT = `You are a knowledgeable assistant for Coforge Limited. Answer using ONLY the provided context from Annual Reports, Investor Presentations, Earnings Transcripts, and Financial Model data.
 
@@ -41,11 +42,11 @@ export async function generateAnswer(question, history = []) {
   if (cached) return cached;
 
   const modelName = getActiveModel();
-  const chunks = await retrieveRelevantChunks(question, 6);
+  const chunks = await retrieveRelevantChunks(question, config.maxContextChunks);
   const context = buildContext(chunks);
 
   const historyText = history
-    .slice(-4)
+    .slice(-config.maxHistoryMessages)
     .map((msg) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
     .join('\n');
 

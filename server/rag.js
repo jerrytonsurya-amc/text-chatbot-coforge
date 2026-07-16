@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { embedText, loadEmbeddings, cosineSimilarity } from './embeddings.js';
 import { isRateLimitError } from './retry.js';
+import { config } from './config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_PATH = path.join(__dirname, '..', 'data', 'knowledge-index.json');
@@ -90,9 +91,9 @@ async function embeddingRetrieve(query, limit) {
   }
 }
 
-export async function retrieveRelevantChunks(query, limit = 6) {
+export async function retrieveRelevantChunks(query, limit = config.maxContextChunks) {
   const embeddings = loadEmbeddings();
-  if (embeddings) {
+  if (embeddings && !config.skipQueryEmbed) {
     return embeddingRetrieve(query, limit);
   }
   return keywordRetrieve(query, limit);

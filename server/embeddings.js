@@ -3,14 +3,15 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { config } from './config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const EMBEDDINGS_PATH = path.join(__dirname, '..', 'data', 'embeddings.json');
 
-const EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2';
+const EMBEDDING_MODEL = config.embeddingModel;
 const EMBEDDING_DIM = 768;
-const BATCH_SIZE = 20;
-const BATCH_DELAY_MS = 5000;
+const BATCH_SIZE = config.embedBatchSize;
+const BATCH_DELAY_MS = config.embedBatchDelayMs;
 
 let genAI = null;
 
