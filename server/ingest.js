@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
 import pdf from 'pdf-parse/lib/pdf-parse.js';
 import XLSX from 'xlsx';
 
@@ -9,6 +10,25 @@ const ROOT = path.join(__dirname, '..');
 const EXTRACTED_DIR = path.join(ROOT, 'data', 'extracted');
 const INDEX_PATH = path.join(ROOT, 'data', 'knowledge-index.json');
 const EXCEL_PATH = path.join(ROOT, 'Coforge Model_Final June 2026.xlsx');
+
+const ZIP_SOURCES = [
+  { zip: 'AR.zip', dest: 'AR' },
+  { zip: 'PPT.zip', dest: 'PPT' },
+  { zip: 'Transcripts.zip', dest: 'Transcripts' },
+];
+
+function extractZips() {
+  for (const { zip, dest } of ZIP_SOURCES) {
+    const zipPath = path.join(ROOT, zip);
+    const destPath = path.join(EXTRACTED_DIR, dest);
+    if (!fs.existsSync(zipPath)) continue;
+    if (fs.existsSync(destPath) && fs.readdirSync(destPath).length > 0) continue;
+
+    fs.mkdirSync(destPath, { recursive: true });
+    console.log(`Extracting ${zip}...`);
+    execSync(`unzip -q -o "${zipPath}" -d "${destPath}"`, { cwd: ROOT });
+  }
+}
 
 const CHUNK_SIZE = 1200;
 const CHUNK_OVERLAP = 200;
@@ -98,6 +118,7 @@ async function walkPdfs(dir, category) {
 
 async function ingest() {
   console.log('Starting document ingestion...\n');
+  extractZips();
 
   const allChunks = [];
 
