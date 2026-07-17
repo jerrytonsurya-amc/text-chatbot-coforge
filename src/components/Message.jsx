@@ -1,19 +1,39 @@
+import { useMemo, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ensureNumericTables } from '../lib/formatMarkdown';
+import { extractMarkdownTables, tableToChartData } from '../lib/parseTable';
+import TableWithChart from './TableWithChart';
 import './Message.css';
-
-const markdownComponents = {
-  table: ({ children }) => (
-    <div className="table-wrapper">
-      <table>{children}</table>
-    </div>
-  ),
-};
 
 export default function Message({ role, content, sources, isLoading }) {
   const isUser = role === 'user';
   const formattedContent = isUser ? content : ensureNumericTables(content);
+  const tableIndexRef = useRef(0);
+
+  const tables = useMemo(
+    () => extractMarkdownTables(formattedContent).map(tableToChartData),
+    [formattedContent]
+  );
+
+  tableIndexRef.current = 0;
+
+  const markdownComponents = useMemo(
+    () => ({
+      table: ({ children }) => {
+        const idx = tableIndexRef.current;
+        tableIndexRef.current += 1;
+        const chartData = tables[idx];
+
+        return (
+          <TableWithChart chartData={chartData}>
+            {children}
+          </TableWithChart>
+        );
+      },
+    }),
+    [tables]
+  );
 
   return (
     <div className={`message ${role}`}>
