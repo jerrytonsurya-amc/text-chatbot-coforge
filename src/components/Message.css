@@ -81,13 +81,16 @@
   overflow-x: auto;
 }
 
+.message-content .table-wrapper {
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
 .message-content table {
   width: 100%;
   border-collapse: collapse;
-  margin: 12px 0;
   font-size: 14px;
-  display: block;
-  overflow-x: auto;
+  min-width: 280px;
 }
 
 .message-content th,

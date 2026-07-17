@@ -1,9 +1,19 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ensureNumericTables } from '../lib/formatMarkdown';
 import './Message.css';
+
+const markdownComponents = {
+  table: ({ children }) => (
+    <div className="table-wrapper">
+      <table>{children}</table>
+    </div>
+  ),
+};
 
 export default function Message({ role, content, sources, isLoading }) {
   const isUser = role === 'user';
+  const formattedContent = isUser ? content : ensureNumericTables(content);
 
   return (
     <div className={`message ${role}`}>
@@ -22,7 +32,9 @@ export default function Message({ role, content, sources, isLoading }) {
             <p>{content}</p>
           ) : (
             <>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {formattedContent}
+              </ReactMarkdown>
               {sources && sources.length > 0 && (
                 <div className="message-sources">
                   <div className="message-sources-label">Sources</div>

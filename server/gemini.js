@@ -9,6 +9,7 @@ import {
   formatRateLimitError,
 } from './retry.js';
 import { config } from './config.js';
+import { ensureNumericTables } from './formatMarkdown.js';
 
 const SYSTEM_PROMPT = `You are a knowledgeable assistant for Coforge Limited. Answer using ONLY the provided context from Annual Reports, Investor Presentations, Earnings Transcripts, and Financial Model data.
 
@@ -56,7 +57,7 @@ async function generateWithModel(modelName, prompt) {
 }
 
 export async function generateAnswer(question, history = []) {
-  const cacheKey = `v3:${question.toLowerCase().trim()}`;
+  const cacheKey = `v4:${question.toLowerCase().trim()}`;
   const cached = getCachedAnswer(cacheKey);
   if (cached) return cached;
 
@@ -79,7 +80,8 @@ QUESTION: ${question}
 Answer:`;
 
   try {
-    const answer = await withRetry(() => generateWithModel(modelName, prompt));
+    let answer = await withRetry(() => generateWithModel(modelName, prompt));
+    answer = ensureNumericTables(answer);
     const sources = [...new Set(chunks.map((c) => `${c.source} (${c.category})`))];
     const result = { answer, sources, model: modelName };
     setCachedAnswer(cacheKey, result);
