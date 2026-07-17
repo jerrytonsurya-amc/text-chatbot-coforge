@@ -2,5 +2,6 @@ node_modules/
 dist/
 .env
 data/extracted/
+Coforge Model_Final June 2026.xlsx
 .DS_Store
 *.log

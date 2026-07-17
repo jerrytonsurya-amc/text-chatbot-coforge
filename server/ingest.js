@@ -3,13 +3,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import pdf from 'pdf-parse/lib/pdf-parse.js';
-import XLSX from 'xlsx';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const EXTRACTED_DIR = path.join(ROOT, 'data', 'extracted');
 const INDEX_PATH = path.join(ROOT, 'data', 'knowledge-index.json');
-const EXCEL_PATH = path.join(ROOT, 'Coforge Model_Final June 2026.xlsx');
 
 const ZIP_SOURCES = [
   { zip: 'AR.zip', dest: 'AR' },
@@ -73,25 +71,6 @@ async function extractPdf(filePath, category) {
   return chunkText(data.text, source, category);
 }
 
-function extractExcel(filePath) {
-  const workbook = XLSX.readFile(filePath);
-  const chunks = [];
-
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-
-    const lines = rows
-      .map((row) => row.filter((cell) => cell !== '' && cell != null).join(' | '))
-      .filter(Boolean);
-
-    const text = `Sheet: ${sheetName}\n${lines.join('\n')}`;
-    chunks.push(...chunkText(text, `Coforge Model - ${sheetName}`, 'Financial Model'));
-  }
-
-  return chunks;
-}
-
 async function walkPdfs(dir, category) {
   const chunks = [];
   if (!fs.existsSync(dir)) return chunks;
@@ -132,14 +111,6 @@ async function ingest() {
     console.log(`\nCategory: ${category}`);
     const chunks = await walkPdfs(dir, category);
     allChunks.push(...chunks);
-  }
-
-  if (fs.existsSync(EXCEL_PATH)) {
-    console.log('\nCategory: Financial Model');
-    console.log(`Processing: ${EXCEL_PATH}`);
-    const excelChunks = extractExcel(EXCEL_PATH);
-    allChunks.push(...excelChunks);
-    console.log(`  -> ${excelChunks.length} chunks`);
   }
 
   const index = {

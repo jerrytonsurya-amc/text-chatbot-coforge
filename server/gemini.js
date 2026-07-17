@@ -11,7 +11,7 @@ import {
 import { config } from './config.js';
 import { ensureNumericTables } from './formatMarkdown.js';
 
-const SYSTEM_PROMPT = `You are a knowledgeable assistant for Coforge Limited. Answer using ONLY the provided context from Annual Reports, Investor Presentations, Earnings Transcripts, and Financial Model data.
+const SYSTEM_PROMPT = `You are a knowledgeable assistant for Coforge Limited. Answer using ONLY the provided context from Annual Reports, Investor Presentations, and Earnings Transcripts.
 
 Rules:
 1. Be clear, structured, and easy to understand.
@@ -26,9 +26,9 @@ Numeric data formatting (CRITICAL — never use bullet lists for numbers):
 - Example for revenue trend:
 | Period | Revenue (INR mn) | Source |
 |--------|------------------|--------|
-| FY20 | 36,886 | Financial Model |
-| FY21 | 39,857 | Financial Model |
-| FY22 | 42,315 | Financial Model |
+| FY20 | 36,886 | Annual Report 2025 |
+| FY21 | 39,857 | Annual Report 2025 |
+| FY22 | 42,315 | Annual Report 2025 |
 - Use a short paragraph before each table to explain context.
 - After the table, add 1–2 sentences summarizing the trend.
 - Multiple datasets = multiple tables (one per metric/currency), not bullet lists.
@@ -57,7 +57,7 @@ async function generateWithModel(modelName, prompt) {
 }
 
 export async function generateAnswer(question, history = []) {
-  const cacheKey = `v4:${question.toLowerCase().trim()}`;
+  const cacheKey = `v5:${question.toLowerCase().trim()}`;
   const cached = getCachedAnswer(cacheKey);
   if (cached) return cached;
 

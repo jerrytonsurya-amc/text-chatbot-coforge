@@ -12,8 +12,8 @@ const SUGGESTIONS = [
     desc: 'Tell me about the Encora acquisition',
   },
   {
-    title: 'Financial Model',
-    desc: 'Key assumptions in the financial model',
+    title: 'Margins & Profitability',
+    desc: 'What are Coforge operating margins in FY26?',
   },
   {
     title: 'Earnings Highlights',
@@ -67,7 +67,7 @@ export default function ChatArea({
             <h1>How can I help you today?</h1>
             <p>
               Ask questions about Coforge annual reports, investor presentations,
-              earnings transcripts, and financial model data.
+              and earnings transcripts.
             </p>
             <div className="suggestions">
               {SUGGESTIONS.map((s) => (
@@ -124,7 +124,7 @@ export default function ChatArea({
             </button>
           </div>
           <div className="input-hint">
-            Answers are based on Coforge AR, PPT, Transcripts & Financial Model documents
+            Answers are based on Coforge AR, PPT, and Earnings Transcripts
           </div>
         </div>
       </div>
