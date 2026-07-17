@@ -81,6 +81,37 @@
   overflow-x: auto;
 }
 
+.message-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.message-content th,
+.message-content td {
+  border: 1px solid #3a3a3a;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.message-content th {
+  background: #2a2a2a;
+  color: #fff;
+  font-weight: 600;
+}
+
+.message-content tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.message-content h3,
+.message-content h4 {
+  color: #ececec;
+  margin: 16px 0 8px;
+  font-size: 15px;
+}
+
 .message-sources {
   margin-top: 12px;
   padding-top: 12px;
