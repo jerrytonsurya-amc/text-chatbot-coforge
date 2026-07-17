@@ -92,7 +92,7 @@
 
 .chat-input-box {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   background: #2f2f2f;
   border: 1px solid #4a4a4a;
   border-radius: 16px;
@@ -115,7 +115,8 @@
   resize: none;
   max-height: 200px;
   line-height: 1.5;
-  padding: 0;
+  padding: 6px 0;
+  text-align: left;
 }
 
 .chat-input-box textarea::placeholder {

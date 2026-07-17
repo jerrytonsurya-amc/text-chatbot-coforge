@@ -2,7 +2,7 @@ function parseRow(line) {
   return line
     .split('|')
     .slice(1, -1)
-    .map((cell) => cell.trim());
+    .map((cell) => cell.trim().replace(/\*\*/g, ''));
 }
 
 function isSeparatorLine(line) {
@@ -55,41 +55,58 @@ export function parseNumeric(str) {
   return match ? parseFloat(match[0]) : null;
 }
 
+function isNonDataColumn(header) {
+  return /source|reference|note|remark|comment/i.test(header || '');
+}
+
 export function tableToChartData(table) {
   if (!table?.headers?.length || !table?.rows?.length) return null;
 
   const { headers, rows } = table;
-  let valueIdx = -1;
+  const numericCols = [];
 
   for (let col = 1; col < headers.length; col += 1) {
+    if (isNonDataColumn(headers[col])) continue;
     const numericCount = rows.filter((row) => parseNumeric(row[col]) !== null).length;
-    if (numericCount >= 2) {
-      valueIdx = col;
-      break;
-    }
+    if (numericCount >= 1) numericCols.push(col);
   }
 
-  if (valueIdx === -1) {
-    const numericCount = rows.filter((row) => parseNumeric(row[0]) !== null).length;
-    if (numericCount >= 2) {
-      return null;
-    }
-    return null;
-  }
+  if (numericCols.length === 0) return null;
 
   const points = rows
-    .map((row) => ({
-      label: row[0] || '—',
-      value: parseNumeric(row[valueIdx]),
-    }))
-    .filter((point) => point.value !== null);
+    .map((row) => {
+      const point = { label: (row[0] || '—').replace(/\*\*/g, '').trim() };
+      let hasValue = false;
 
-  if (points.length < 2) return null;
+      numericCols.forEach((col) => {
+        const value = parseNumeric(row[col]);
+        if (value !== null) {
+          point[headers[col]] = value;
+          hasValue = true;
+        }
+      });
+
+      return hasValue ? point : null;
+    })
+    .filter(Boolean);
+
+  if (points.length < 1) return null;
+
+  const series = numericCols.map((col) => ({
+    key: headers[col],
+    name: headers[col],
+  }));
+
+  const primaryCol = numericCols[numericCols.length - 1];
 
   return {
-    title: `${headers[valueIdx]} by ${headers[0]}`,
+    title: numericCols.length > 1
+      ? `${headers[0]} Comparison`
+      : `${headers[primaryCol]} by ${headers[0]}`,
     labelKey: headers[0],
-    valueKey: headers[valueIdx],
+    valueKey: headers[primaryCol],
+    series,
+    multiSeries: series.length > 1,
     points,
   };
 }

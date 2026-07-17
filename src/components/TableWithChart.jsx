@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import ChartModal from './ChartModal';
+import { extractTableFromReactChildren } from '../lib/extractTableFromReact';
+import { tableToChartData } from '../lib/parseTable';
 import './ChartModal.css';
 
-export default function TableWithChart({ chartData, children }) {
+export default function TableWithChart({ children }) {
   const [showChart, setShowChart] = useState(false);
-  const canChart = chartData && chartData.points.length >= 2;
+
+  const chartData = useMemo(() => {
+    const table = extractTableFromReactChildren(children);
+    return tableToChartData(table);
+  }, [children]);
+
+  const canChart = Boolean(chartData?.points?.length);
 
   return (
     <div className="table-block">

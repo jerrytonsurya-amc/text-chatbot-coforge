@@ -10,8 +10,11 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Legend,
 } from 'recharts';
 import './ChartModal.css';
+
+const COLORS = ['#19c37d', '#6366f1', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function ChartModal({ chartData, onClose }) {
   const chartRef = useRef(null);
@@ -30,12 +33,18 @@ export default function ChartModal({ chartData, onClose }) {
     link.click();
   };
 
-  const data = chartData.points.map((p) => ({
-    name: p.label,
-    value: p.value,
-  }));
+  const data = chartData.points.map((point) => {
+    const row = { name: point.label };
+    chartData.series.forEach((s) => {
+      if (point[s.key] != null) row[s.key] = point[s.key];
+    });
+    if (!chartData.multiSeries && point[chartData.valueKey] != null) {
+      row.value = point[chartData.valueKey];
+    }
+    return row;
+  });
 
-  const useLineChart = chartData.points.length > 4;
+  const useLineChart = !chartData.multiSeries && chartData.points.length > 4;
 
   return (
     <div className="chart-modal-overlay" onClick={onClose}>
@@ -49,7 +58,27 @@ export default function ChartModal({ chartData, onClose }) {
 
         <div className="chart-modal-body" ref={chartRef}>
           <ResponsiveContainer width="100%" height={360}>
-            {useLineChart ? (
+            {chartData.multiSeries ? (
+              <BarChart data={data} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 11 }} />
+                <YAxis tick={{ fill: '#aaa', fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{ background: '#2a2a2a', border: '1px solid #444', borderRadius: 8 }}
+                  labelStyle={{ color: '#fff' }}
+                />
+                <Legend wrapperStyle={{ color: '#aaa', fontSize: 12 }} />
+                {chartData.series.map((s, i) => (
+                  <Bar
+                    key={s.key}
+                    dataKey={s.key}
+                    fill={COLORS[i % COLORS.length]}
+                    radius={[4, 4, 0, 0]}
+                    name={s.name}
+                  />
+                ))}
+              </BarChart>
+            ) : useLineChart ? (
               <LineChart data={data} margin={{ top: 16, right: 24, left: 8, bottom: 8 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                 <XAxis dataKey="name" tick={{ fill: '#aaa', fontSize: 12 }} />
