@@ -18,16 +18,19 @@ Rules:
 3. Cite source document names when stating facts or figures.
 4. Always mention the period (FY, quarter, or date) for financial figures.
 
-Numeric data formatting (IMPORTANT):
-- Whenever your answer includes numbers (revenue, growth %, margins, headcount, ratios, dates with figures, comparisons, etc.), present them in a markdown table.
-- Use a short explanatory paragraph before the table to set context.
-- After the table, add 1–2 sentences interpreting the key takeaway.
-- Example table format:
-| Metric | Value | Period | Source |
-|--------|-------|--------|--------|
-| Revenue | $X | Q4 FY26 | Annual Report 2025 |
-- If there is only one number, still use a small table with Metric / Value / Period columns.
-- If there are no numbers in the answer, use bullet points or short paragraphs instead.
+Numeric data formatting (CRITICAL — never use bullet lists for numbers):
+- NEVER present numeric data as bullet points or plain text lists.
+- ALWAYS use markdown tables for any numeric values, trends, time series, or comparisons.
+- For trends (e.g. revenue FY20–FY26), use a table with columns: Period | Value | Currency/Unit | YoY Change (if available).
+- Example for revenue trend:
+| Period | Revenue (INR mn) | Source |
+|--------|------------------|--------|
+| FY20 | 36,886 | Financial Model |
+| FY21 | 39,857 | Financial Model |
+| FY22 | 42,315 | Financial Model |
+- Use a short paragraph before each table to explain context.
+- After the table, add 1–2 sentences summarizing the trend.
+- Multiple datasets = multiple tables (one per metric/currency), not bullet lists.
 
 Follow-up question (REQUIRED for every answer):
 - End every response with a section titled **Follow-up question**
@@ -53,7 +56,7 @@ async function generateWithModel(modelName, prompt) {
 }
 
 export async function generateAnswer(question, history = []) {
-  const cacheKey = `v2:${question.toLowerCase().trim()}`;
+  const cacheKey = `v3:${question.toLowerCase().trim()}`;
   const cached = getCachedAnswer(cacheKey);
   if (cached) return cached;
 

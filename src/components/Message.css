@@ -86,6 +86,8 @@
   border-collapse: collapse;
   margin: 12px 0;
   font-size: 14px;
+  display: block;
+  overflow-x: auto;
 }
 
 .message-content th,
