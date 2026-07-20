@@ -33,11 +33,16 @@ Numeric data formatting (CRITICAL — never use bullet lists for numbers):
 - After the table, add 1–2 sentences summarizing the trend.
 - Multiple datasets = multiple tables (one per metric/currency), not bullet lists.
 
-Follow-up question (REQUIRED for every answer):
-- End every response with a section titled **Follow-up question**
-- Ask one specific, relevant question that helps the user explore the topic deeper (e.g. compare quarters, drill into a segment, ask about drivers, margins, or outlook).
-- Make the follow-up natural and tied to what you just answered — not generic.
-- Do not ask multiple follow-up questions; exactly one.`;
+Follow-up (REQUIRED for substantive answers):
+- End with one short, casual question tied to what you just answered — as a natural next step, not a labeled section.
+- NEVER write headings or labels like "Follow-up question", "Follow up:", or similar.
+- Weave the question into the last sentence or add it as a final line on its own (e.g. "Would you like to see how Q4 margins compare to Q3?").
+- Ask exactly one question; keep it conversational.
+
+Greetings (hi, hello, hey, good morning, etc.):
+- Reply warmly and briefly. Do not pull from documents or cite sources.
+- Invite them to explore Coforge data, e.g. ask what they'd like to research today.
+- Skip tables and document citations for pure greetings.`;
 
 let genAI = null;
 
@@ -56,12 +61,41 @@ async function generateWithModel(modelName, prompt) {
   return result.response.text();
 }
 
+const GREETING_PATTERN = /^(hi|hello|hey|howdy|good\s+(morning|afternoon|evening)|greetings)[!.?\s]*$/i;
+
+function isGreeting(text) {
+  return GREETING_PATTERN.test(text.trim());
+}
+
+function greetingReply() {
+  return (
+    "Hello! I'm your Coforge knowledge assistant — I can help with annual reports, " +
+    'investor presentations, and earnings call transcripts.\n\n' +
+    'What would you like to research today?'
+  );
+}
+
+function polishAnswer(text) {
+  let answer = ensureNumericTables(text);
+  answer = answer.replace(/\n*\*{0,2}Follow[- ]?up questions?\*{0,2}\s*:?\s*\n*/gi, '\n\n');
+  answer = answer.replace(/\n*Follow[- ]?up questions?\s*:?\s*\n*/gi, '\n\n');
+  return answer.trim();
+}
+
 export async function generateAnswer(question, history = []) {
-  const cacheKey = `v5:${question.toLowerCase().trim()}`;
+  const trimmed = question.trim();
+  const cacheKey = `v6:${trimmed.toLowerCase()}`;
   const cached = getCachedAnswer(cacheKey);
   if (cached) return cached;
 
   const modelName = getActiveModel();
+
+  if (isGreeting(trimmed) && history.length === 0) {
+    const result = { answer: greetingReply(), sources: [], model: modelName };
+    setCachedAnswer(cacheKey, result);
+    return result;
+  }
+
   const chunks = await retrieveRelevantChunks(question, config.maxContextChunks);
   const context = buildContext(chunks);
 
@@ -81,7 +115,7 @@ Answer:`;
 
   try {
     let answer = await withRetry(() => generateWithModel(modelName, prompt));
-    answer = ensureNumericTables(answer);
+    answer = polishAnswer(answer);
     const sources = [...new Set(chunks.map((c) => `${c.source} (${c.category})`))];
     const result = { answer, sources, model: modelName };
     setCachedAnswer(cacheKey, result);
