@@ -18,6 +18,7 @@ Rules:
 2. If the answer is not in the context, say so clearly.
 3. Cite source document names when stating facts or figures.
 4. Always mention the period (FY, quarter, or date) for financial figures.
+5. Use the CURRENT DATE AND TIME provided in each request to interpret "latest", "recent", "current", "last quarter/FY", and similar phrases. Coforge's financial year is April–March (e.g. FY26 = Apr 2025–Mar 2026). Prefer the most recent period available in the documents that is on or before the current date.
 
 Numeric data formatting (CRITICAL — never use bullet lists for numbers):
 - NEVER present numeric data as bullet points or plain text lists.
@@ -82,9 +83,34 @@ function polishAnswer(text) {
   return answer.trim();
 }
 
-export async function generateAnswer(question, history = []) {
+function resolveCurrentDateTime(currentDateTime) {
+  if (currentDateTime && typeof currentDateTime === 'object') {
+    if (typeof currentDateTime.local === 'string' && currentDateTime.local.trim()) {
+      return currentDateTime.local.trim();
+    }
+    if (typeof currentDateTime.iso === 'string' && currentDateTime.iso.trim()) {
+      return currentDateTime.iso.trim();
+    }
+  }
+  if (typeof currentDateTime === 'string' && currentDateTime.trim()) {
+    return currentDateTime.trim();
+  }
+  return new Date().toLocaleString('en-IN', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short',
+    timeZone: 'Asia/Kolkata',
+  });
+}
+
+export async function generateAnswer(question, history = [], currentDateTime = null) {
   const trimmed = question.trim();
-  const cacheKey = `v6:${trimmed.toLowerCase()}`;
+  const nowLabel = resolveCurrentDateTime(currentDateTime);
+  const cacheKey = `v7:${nowLabel.slice(0, 10)}:${trimmed.toLowerCase()}`;
   const cached = getCachedAnswer(cacheKey);
   if (cached) return cached;
 
@@ -105,6 +131,8 @@ export async function generateAnswer(question, history = []) {
     .join('\n');
 
   const prompt = `${SYSTEM_PROMPT}
+
+CURRENT DATE AND TIME: ${nowLabel}
 
 CONTEXT:
 ${context}

@@ -21,13 +21,13 @@ app.get('/api/health', (_req, res) => {
 
 app.post('/api/chat', async (req, res) => {
   try {
-    const { message, history = [] } = req.body;
+    const { message, history = [], currentDateTime = null } = req.body;
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    const { answer, sources } = await generateAnswer(message.trim(), history);
+    const { answer, sources } = await generateAnswer(message.trim(), history, currentDateTime);
 
     res.json({ answer, sources });
   } catch (err) {
