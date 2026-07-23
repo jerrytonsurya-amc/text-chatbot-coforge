@@ -31,7 +31,7 @@ function extractZips() {
 const CHUNK_SIZE = 1200;
 const CHUNK_OVERLAP = 200;
 
-function chunkText(text, source, category) {
+function chunkText(text, source, category, company = 'Coforge') {
   const cleaned = text.replace(/\s+/g, ' ').trim();
   if (!cleaned) return [];
 
@@ -53,6 +53,7 @@ function chunkText(text, source, category) {
       id: `${source}-${chunks.length}`,
       source,
       category,
+      company,
       text: slice.trim(),
     });
 
@@ -64,14 +65,14 @@ function chunkText(text, source, category) {
   return chunks;
 }
 
-async function extractPdf(filePath, category) {
+async function extractPdf(filePath, category, company) {
   const buffer = fs.readFileSync(filePath);
   const data = await pdf(buffer);
   const source = path.basename(filePath);
-  return chunkText(data.text, source, category);
+  return chunkText(data.text, source, category, company);
 }
 
-async function walkPdfs(dir, category) {
+async function walkPdfs(dir, category, company = 'Coforge') {
   const chunks = [];
   if (!fs.existsSync(dir)) return chunks;
 
@@ -83,7 +84,7 @@ async function walkPdfs(dir, category) {
     } else if (entry.name.toLowerCase().endsWith('.pdf')) {
       try {
         console.log(`Processing: ${fullPath}`);
-        const pdfChunks = await extractPdf(fullPath, category);
+        const pdfChunks = await extractPdf(fullPath, category, company);
         chunks.push(...pdfChunks);
         console.log(`  -> ${pdfChunks.length} chunks`);
       } catch (err) {
@@ -102,14 +103,21 @@ async function ingest() {
   const allChunks = [];
 
   const categories = [
-    { dir: path.join(EXTRACTED_DIR, 'AR'), category: 'Annual Reports' },
-    { dir: path.join(EXTRACTED_DIR, 'PPT'), category: 'Investor Presentations' },
-    { dir: path.join(EXTRACTED_DIR, 'Transcripts'), category: 'Earnings Transcripts' },
+    { dir: path.join(EXTRACTED_DIR, 'AR'), category: 'Annual Reports', company: 'Coforge' },
+    { dir: path.join(EXTRACTED_DIR, 'PPT'), category: 'Investor Presentations', company: 'Coforge' },
+    { dir: path.join(EXTRACTED_DIR, 'Transcripts'), category: 'Earnings Transcripts', company: 'Coforge' },
+    { dir: path.join(EXTRACTED_DIR, 'CIFC', 'AR'), category: 'CIFC Annual Reports', company: 'CIFC' },
+    { dir: path.join(EXTRACTED_DIR, 'CIFC', 'PPT'), category: 'CIFC Investor Presentations', company: 'CIFC' },
+    { dir: path.join(EXTRACTED_DIR, 'CIFC', 'Transcripts'), category: 'CIFC Earnings Transcripts', company: 'CIFC' },
   ];
 
-  for (const { dir, category } of categories) {
+  for (const { dir, category, company } of categories) {
+    if (!fs.existsSync(dir)) {
+      console.log(`\nSkipping missing folder: ${dir}`);
+      continue;
+    }
     console.log(`\nCategory: ${category}`);
-    const chunks = await walkPdfs(dir, category);
+    const chunks = await walkPdfs(dir, category, company);
     allChunks.push(...chunks);
   }
 

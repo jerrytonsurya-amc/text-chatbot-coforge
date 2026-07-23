@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './Sidebar.css';
 
-export default function Sidebar({ threads, activeThreadId, onSelectThread, onNewChat, onDeleteThread }) {
+export default function Sidebar({ threads, activeThreadId, activeCompany, onSelectThread, onNewChat, onDeleteThread }) {
   const [hoveredId, setHoveredId] = useState(null);
 
   return (
@@ -45,7 +45,7 @@ export default function Sidebar({ threads, activeThreadId, onSelectThread, onNew
       </div>
 
       <div className="sidebar-footer">
-        Coforge Knowledge Assistant
+        {activeCompany === 'CIFC' ? 'Cholamandalam (CIFC) Knowledge Assistant' : 'Coforge Knowledge Assistant'}
       </div>
     </aside>
   );

@@ -10,6 +10,8 @@
     "build": "vite build",
     "ingest": "node server/ingest.js",
     "ingest:fast": "SKIP_EMBED=1 node server/ingest.js",
+    "download:cifc": "node server/download-cifc.js",
+    "setup:cifc": "node server/download-cifc.js && SKIP_EMBED=1 node server/ingest.js",
     "embed": "node server/embed-index.js",
     "preview": "vite preview"
   },

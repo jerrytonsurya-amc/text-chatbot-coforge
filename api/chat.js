@@ -6,13 +6,18 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { message, history = [], currentDateTime = null } = req.body;
+    const { message, history = [], currentDateTime = null, company = 'Coforge' } = req.body;
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
-    const { answer, sources } = await generateAnswer(message.trim(), history, currentDateTime);
+    const { answer, sources } = await generateAnswer(
+      message.trim(),
+      history,
+      currentDateTime,
+      company
+    );
     return res.status(200).json({ answer, sources });
   } catch (err) {
     console.error('Chat error:', err);

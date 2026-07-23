@@ -53,9 +53,10 @@ export function subscribeToMessages(threadId, callback) {
   });
 }
 
-export async function createThread(title = 'New chat') {
+export async function createThread(title = 'New chat', company = 'Coforge') {
   const ref = await addDoc(collection(db, THREADS), {
     title,
+    company,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });

@@ -1,0 +1,215 @@
+{
+  "downloadedAt": "2026-07-23T06:07:43.018Z",
+  "sourceDocx": "CIFC_Document_Links.docx",
+  "documents": [
+    {
+      "url": "https://files.cholamandalam.com/chola_annual_reports_2021_2022_recents_1dac7d22f6.pdf",
+      "category": "AR",
+      "filename": "CIFC_AR_01_chola_annual_reports_2021_2022_recents_1dac7d22f6.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/AR/CIFC_AR_01_chola_annual_reports_2021_2022_recents_1dac7d22f6.pdf",
+      "bytes": 4528564,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/annual_report_fy_2022_2023_ce4c4f2617.pdf",
+      "category": "AR",
+      "filename": "CIFC_AR_02_annual_report_fy_2022_2023_ce4c4f2617.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/AR/CIFC_AR_02_annual_report_fy_2022_2023_ce4c4f2617.pdf",
+      "bytes": 7439358,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/annual_report_fy_2023_2024_9fd088f109.pdf",
+      "category": "AR",
+      "filename": "CIFC_AR_03_annual_report_fy_2023_2024_9fd088f109.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/AR/CIFC_AR_03_annual_report_fy_2023_2024_9fd088f109.pdf",
+      "bytes": 24674102,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Annual_Report_for_FY_2024_25_6829876a3e.pdf",
+      "category": "AR",
+      "filename": "CIFC_AR_04_Annual_Report_for_FY_2024_25_6829876a3e.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/AR/CIFC_AR_04_Annual_Report_for_FY_2024_25_6829876a3e.pdf",
+      "bytes": 8005522,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Annual_Report_FY_2025_26_6e549aa38c.pdf",
+      "category": "AR",
+      "filename": "CIFC_AR_05_Annual_Report_FY_2025_26_6e549aa38c.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/AR/CIFC_AR_05_Annual_Report_FY_2025_26_6e549aa38c.pdf",
+      "bytes": 6326028,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_Investor_presentation_Dec_23_77b0c4cfd4.pdf",
+      "category": "PPT",
+      "filename": "CIFC_PPT_06_Chola_Investor_presentation_Dec_23_77b0c4cfd4.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/PPT/CIFC_PPT_06_Chola_Investor_presentation_Dec_23_77b0c4cfd4.pdf",
+      "bytes": 3693365,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/chola_investor_presentation_mar_24_e06627e6b4.pdf",
+      "category": "PPT",
+      "filename": "CIFC_PPT_07_chola_investor_presentation_mar_24_e06627e6b4.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/PPT/CIFC_PPT_07_chola_investor_presentation_mar_24_e06627e6b4.pdf",
+      "bytes": 5244687,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_Investor_presentation_Jun_24_5018a8c586.pdf",
+      "category": "PPT",
+      "filename": "CIFC_PPT_08_Chola_Investor_presentation_Jun_24_5018a8c586.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/PPT/CIFC_PPT_08_Chola_Investor_presentation_Jun_24_5018a8c586.pdf",
+      "bytes": 5203654,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_Investor_presentation_Sep_24_66dee4502e.pdf",
+      "category": "PPT",
+      "filename": "CIFC_PPT_09_Chola_Investor_presentation_Sep_24_66dee4502e.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/PPT/CIFC_PPT_09_Chola_Investor_presentation_Sep_24_66dee4502e.pdf",
+      "bytes": 5443275,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_Investor_presentation_Dec_24_913a07ac24.pdf",
+      "category": "PPT",
+      "filename": "CIFC_PPT_10_Chola_Investor_presentation_Dec_24_913a07ac24.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/PPT/CIFC_PPT_10_Chola_Investor_presentation_Dec_24_913a07ac24.pdf",
+      "bytes": 5185822,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_Investor_presentation_Mar_25_9498fe0244.pdf",
+      "category": "PPT",
+      "filename": "CIFC_PPT_11_Chola_Investor_presentation_Mar_25_9498fe0244.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/PPT/CIFC_PPT_11_Chola_Investor_presentation_Mar_25_9498fe0244.pdf",
+      "bytes": 5640349,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_Investor_presentation_Jun_25_d6fccd221b.pdf",
+      "category": "PPT",
+      "filename": "CIFC_PPT_12_Chola_Investor_presentation_Jun_25_d6fccd221b.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/PPT/CIFC_PPT_12_Chola_Investor_presentation_Jun_25_d6fccd221b.pdf",
+      "bytes": 6064532,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_Investor_presentation_Sep_25_2ba73c68d8.pdf",
+      "category": "PPT",
+      "filename": "CIFC_PPT_13_Chola_Investor_presentation_Sep_25_2ba73c68d8.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/PPT/CIFC_PPT_13_Chola_Investor_presentation_Sep_25_2ba73c68d8.pdf",
+      "bytes": 5984098,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_Investor_presentation_Dec_25_6a52fb4583.pdf",
+      "category": "PPT",
+      "filename": "CIFC_PPT_14_Chola_Investor_presentation_Dec_25_6a52fb4583.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/PPT/CIFC_PPT_14_Chola_Investor_presentation_Dec_25_6a52fb4583.pdf",
+      "bytes": 6030621,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_Investor_presentation_Mar_26_63135c32db.pdf",
+      "category": "PPT",
+      "filename": "CIFC_PPT_15_Chola_Investor_presentation_Mar_26_63135c32db.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/PPT/CIFC_PPT_15_Chola_Investor_presentation_Mar_26_63135c32db.pdf",
+      "bytes": 5685549,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_FY_24_Q3_Transcript_f99648bebc.pdf",
+      "category": "Transcripts",
+      "filename": "CIFC_Transcripts_16_Chola_FY_24_Q3_Transcript_f99648bebc.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/Transcripts/CIFC_Transcripts_16_Chola_FY_24_Q3_Transcript_f99648bebc.pdf",
+      "bytes": 243742,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_FY_24_Q4_Transcript_Kotak_1cef6fbeca.pdf",
+      "category": "Transcripts",
+      "filename": "CIFC_Transcripts_17_Chola_FY_24_Q4_Transcript_Kotak_1cef6fbeca.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/Transcripts/CIFC_Transcripts_17_Chola_FY_24_Q4_Transcript_Kotak_1cef6fbeca.pdf",
+      "bytes": 265707,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_FY_25_Q1_Transcript_Kotak_02d556e9d0.pdf",
+      "category": "Transcripts",
+      "filename": "CIFC_Transcripts_18_Chola_FY_25_Q1_Transcript_Kotak_02d556e9d0.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/Transcripts/CIFC_Transcripts_18_Chola_FY_25_Q1_Transcript_Kotak_02d556e9d0.pdf",
+      "bytes": 249838,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_FY_25_Q2_Transcript_Kotak_f93e9dc05c.pdf",
+      "category": "Transcripts",
+      "filename": "CIFC_Transcripts_19_Chola_FY_25_Q2_Transcript_Kotak_f93e9dc05c.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/Transcripts/CIFC_Transcripts_19_Chola_FY_25_Q2_Transcript_Kotak_f93e9dc05c.pdf",
+      "bytes": 253663,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_FY_25_Q3_Transcript_Kotak_c00277ae57.pdf",
+      "category": "Transcripts",
+      "filename": "CIFC_Transcripts_20_Chola_FY_25_Q3_Transcript_Kotak_c00277ae57.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/Transcripts/CIFC_Transcripts_20_Chola_FY_25_Q3_Transcript_Kotak_c00277ae57.pdf",
+      "bytes": 255126,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_FY_25_Q4_Transcript_Kotak_d848595a44.pdf",
+      "category": "Transcripts",
+      "filename": "CIFC_Transcripts_21_Chola_FY_25_Q4_Transcript_Kotak_d848595a44.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/Transcripts/CIFC_Transcripts_21_Chola_FY_25_Q4_Transcript_Kotak_d848595a44.pdf",
+      "bytes": 256995,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_FY_26_Q1_Transcript_Kotak_8504a5d1d7.pdf",
+      "category": "Transcripts",
+      "filename": "CIFC_Transcripts_22_Chola_FY_26_Q1_Transcript_Kotak_8504a5d1d7.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/Transcripts/CIFC_Transcripts_22_Chola_FY_26_Q1_Transcript_Kotak_8504a5d1d7.pdf",
+      "bytes": 305000,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Chola_FY_26_Q2_Transcript_Kotak_82243e7d3e.pdf",
+      "category": "Transcripts",
+      "filename": "CIFC_Transcripts_23_Chola_FY_26_Q2_Transcript_Kotak_82243e7d3e.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/Transcripts/CIFC_Transcripts_23_Chola_FY_26_Q2_Transcript_Kotak_82243e7d3e.pdf",
+      "bytes": 304024,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Call_Transcript_Q3_FY_26_8e72e42629.pdf",
+      "category": "Transcripts",
+      "filename": "CIFC_Transcripts_24_Call_Transcript_Q3_FY_26_8e72e42629.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/Transcripts/CIFC_Transcripts_24_Call_Transcript_Q3_FY_26_8e72e42629.pdf",
+      "bytes": 322660,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Earnings_Call_Transcript_4_May2026_2cf2ef8c05.pdf",
+      "category": "Transcripts",
+      "filename": "CIFC_Transcripts_25_Earnings_Call_Transcript_4_May2026_2cf2ef8c05.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/Transcripts/CIFC_Transcripts_25_Earnings_Call_Transcript_4_May2026_2cf2ef8c05.pdf",
+      "bytes": 360144,
+      "status": "downloaded"
+    },
+    {
+      "url": "https://files.cholamandalam.com/Call_Transcript_12919700f8.pdf",
+      "category": "Transcripts",
+      "filename": "CIFC_Transcripts_26_Call_Transcript_12919700f8.pdf",
+      "path": "/Users/jerrytonsurya/Desktop/Text chatbot/data/extracted/CIFC/Transcripts/CIFC_Transcripts_26_Call_Transcript_12919700f8.pdf",
+      "bytes": 296148,
+      "status": "downloaded"
+    }
+  ],
+  "failed": []
+}

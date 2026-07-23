@@ -19,11 +19,14 @@ export default function Message({ role, content, sources, isLoading }) {
           {isUser ? 'U' : 'C'}
         </div>
         <div className="message-content">
-          {isLoading ? (
-            <div className="typing-indicator">
-              <span />
-              <span />
-              <span />
+            {isLoading ? (
+            <div className="typing-indicator-wrap">
+              <div className="typing-indicator">
+                <span />
+                <span />
+                <span />
+              </div>
+              <div className="typing-status">Searching all documents and consolidating answer...</div>
             </div>
           ) : isUser ? (
             <p>{content}</p>

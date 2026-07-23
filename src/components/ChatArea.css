@@ -7,9 +7,42 @@
 }
 
 .chat-header {
-  padding: 14px 24px;
+  padding: 12px 24px 10px;
   border-bottom: 1px solid #2a2a2a;
   text-align: center;
+}
+
+.company-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 10px;
+  background: #2a2a2a;
+  border-radius: 10px;
+}
+
+.company-tab {
+  border: none;
+  background: transparent;
+  color: #aaa;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.company-tab:hover {
+  color: #ececec;
+}
+
+.company-tab.active {
+  background: #3a3a3a;
+  color: #fff;
+}
+
+.chat-header-title {
   font-size: 14px;
   font-weight: 500;
   color: #ececec;
@@ -48,7 +81,7 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
-  max-width: 640px;
+  max-width: 720px;
   width: 100%;
 }
 
@@ -123,6 +156,53 @@
   color: #666;
 }
 
+.chat-input-box.listening {
+  border-color: #e25555;
+}
+
+.chat-input-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.voice-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #aaa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+
+.voice-btn:hover:not(:disabled) {
+  background: #3a3a3a;
+  color: #ececec;
+}
+
+.voice-btn.active {
+  background: rgba(226, 85, 85, 0.15);
+  color: #ff7b7b;
+  animation: voice-pulse 1.2s ease-in-out infinite;
+}
+
+.voice-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+@keyframes voice-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(226, 85, 85, 0.2); }
+  50% { box-shadow: 0 0 0 6px rgba(226, 85, 85, 0); }
+}
+
 .send-btn {
   width: 32px;
   height: 32px;
@@ -135,7 +215,6 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-left: 8px;
   transition: opacity 0.15s;
 }
 
@@ -153,4 +232,8 @@
   font-size: 11px;
   color: #555;
   margin-top: 8px;
+}
+
+.input-hint.voice-status {
+  color: #ff9b9b;
 }
