@@ -1,5 +1,5 @@
 export const config = {
-  chatModel: process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite',
+  chatModel: process.env.CLAUDE_MODEL || 'claude-haiku-4-5-20251001',
   embeddingModel: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2',
   embedBatchSize: 50,
   embedBatchDelayMs: 2000,

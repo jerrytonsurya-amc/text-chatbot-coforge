@@ -2,10 +2,10 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from './config.js';
 import { withRetry, isRateLimitError } from './retry.js';
 import { detectQuestionCompany } from '../shared/companyGuard.js';
+import { generateText } from './claude.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_PATH = path.join(__dirname, '..', 'data', 'knowledge-index.json');
@@ -25,7 +25,6 @@ const QUERY_EXPANSIONS = {
 
 let cachedIndex = null;
 let cachedCatalog = null;
-let genAI = null;
 
 function loadIndex() {
   if (cachedIndex) return cachedIndex;
@@ -34,15 +33,6 @@ function loadIndex() {
   }
   cachedIndex = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8'));
   return cachedIndex;
-}
-
-function getClient() {
-  if (!genAI) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
-    genAI = new GoogleGenerativeAI(apiKey);
-  }
-  return genAI;
 }
 
 function tokenize(text) {
@@ -257,11 +247,7 @@ Instructions:
 - Return ONLY a JSON array of document numbers, e.g. [1, 4, 7, 12]
 - Select up to ${limit} documents.`;
 
-  const model = getClient().getGenerativeModel({ model: config.chatModel });
-  const result = await withRetry(async () => {
-    const response = await model.generateContent(prompt);
-    return response.response.text();
-  });
+  const result = await withRetry(() => generateText(prompt, { maxTokens: 512 }));
 
   const ids = parseDocumentSelection(result, shortlist.length);
   if (!ids || ids.length === 0) {

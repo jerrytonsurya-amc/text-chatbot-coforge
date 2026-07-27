@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { generateText } from './claude.js';
 import { retrieveRelevantChunks, buildContext } from './rag.js';
 import {
   getActiveModel,
@@ -71,21 +71,8 @@ function normalizeCompany(company) {
   return company === 'CIFC' ? 'CIFC' : 'Coforge';
 }
 
-let genAI = null;
-
-function getClient() {
-  if (!genAI) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) throw new Error('GEMINI_API_KEY is not configured');
-    genAI = new GoogleGenerativeAI(apiKey);
-  }
-  return genAI;
-}
-
 async function generateWithModel(modelName, prompt) {
-  const model = getClient().getGenerativeModel({ model: modelName });
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+  return generateText(prompt, { model: modelName });
 }
 
 const GREETING_PATTERN = /^(hi|hello|hey|howdy|good\s+(morning|afternoon|evening)|greetings)[!.?\s]*$/i;
@@ -145,7 +132,7 @@ export async function generateAnswer(question, history = [], currentDateTime = n
   const trimmed = question.trim();
   const activeCompany = normalizeCompany(company);
   const nowLabel = resolveCurrentDateTime(currentDateTime);
-  const cacheKey = `v10:${activeCompany}:${nowLabel.slice(0, 10)}:${trimmed.toLowerCase()}`;
+  const cacheKey = `v11:${activeCompany}:${nowLabel.slice(0, 10)}:${trimmed.toLowerCase()}`;
   const cached = getCachedAnswer(cacheKey);
   if (cached) return cached;
 

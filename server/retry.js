@@ -40,7 +40,15 @@ function parseRetryDelayMs(message) {
 
 export function isRateLimitError(err) {
   const msg = err?.message || '';
-  return err?.status === 429 || msg.includes('429') || msg.includes('quota') || msg.includes('Too Many Requests');
+  const type = err?.error?.type || err?.type || '';
+  return (
+    err?.status === 429 ||
+    type === 'rate_limit_error' ||
+    msg.includes('429') ||
+    msg.includes('quota') ||
+    msg.includes('rate limit') ||
+    msg.includes('Too Many Requests')
+  );
 }
 
 export async function withRetry(fn, maxAttempts = 3) {
