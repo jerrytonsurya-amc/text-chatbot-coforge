@@ -10,7 +10,7 @@ export const config = {
   maxChunksPerSource: 4,
   maxChunksPerSourceFull: isVercel ? 1 : 2,
   maxDirectContextChars: isVercel ? 22000 : 70000,
-  vercelMaxDocuments: 10,
+  vercelMaxDocuments: 6,
   fullResearchBatchSize: 6,
   useAiDocumentSelection: process.env.SKIP_AI_DOC_SELECT !== '1',
   maxHistoryMessages: 4,

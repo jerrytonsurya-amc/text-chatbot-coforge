@@ -29,7 +29,7 @@ export default async function handler(req, res) {
     );
 
     console.log(`[chat] ${company} answered in ${Date.now() - started}ms`);
-    return res.status(200).json({ answer, sources });
+    return res.status(200).json({ answer, sources, runtime: process.env.VERCEL === '1' ? 'vercel' : 'local' });
   } catch (err) {
     console.error(`[chat] failed after ${Date.now() - started}ms:`, err);
     return res.status(500).json({
