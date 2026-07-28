@@ -3,6 +3,10 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "functions": {
+    "api/*.js": {
+      "maxDuration": 120,
+      "memory": 3008
+    },
     "api/chat.js": {
       "maxDuration": 120,
       "memory": 3008,

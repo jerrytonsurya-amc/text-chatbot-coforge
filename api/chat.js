@@ -1,6 +1,8 @@
 import 'dotenv/config';
 import { generateAnswer } from '../server/gemini.js';
 
+export const maxDuration = 120;
+
 export const config = {
   maxDuration: 120,
 };
