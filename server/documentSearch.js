@@ -21,6 +21,9 @@ const QUERY_EXPANSIONS = {
   earnings: ['earnings', 'transcript', 'call', 'quarter', 'q1', 'q2', 'q3', 'q4', 'fy'],
   client: ['client', 'customer', 'deal', 'wins', 'pipeline'],
   guidance: ['guidance', 'outlook', 'forecast', 'target'],
+  vehicle: ['vehicle', 'vehicles', 'auto', 'commercial', 'passenger', 'cv', 'pv'],
+  aum: ['aum', 'assets under management', 'book size', 'loan book', 'portfolio'],
+  segment: ['segment', 'vertical', 'business mix', 'product mix'],
 };
 
 let cachedIndex = null;
@@ -28,10 +31,15 @@ let cachedCatalog = null;
 
 function loadIndex() {
   if (cachedIndex) return cachedIndex;
+  if (globalThis.__knowledgeIndex) {
+    cachedIndex = globalThis.__knowledgeIndex;
+    return cachedIndex;
+  }
   if (!fs.existsSync(INDEX_PATH)) {
     throw new Error('Knowledge index not found. Run: npm run ingest');
   }
   cachedIndex = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8'));
+  globalThis.__knowledgeIndex = cachedIndex;
   return cachedIndex;
 }
 
@@ -86,6 +94,10 @@ function scoreChunk(chunk, queryTokens, targetCompany = null) {
 
 export function buildDocumentCatalog() {
   if (cachedCatalog) return cachedCatalog;
+  if (globalThis.__documentCatalog) {
+    cachedCatalog = globalThis.__documentCatalog;
+    return cachedCatalog;
+  }
 
   const index = loadIndex();
   const docs = new Map();
@@ -104,6 +116,7 @@ export function buildDocumentCatalog() {
   }
 
   cachedCatalog = [...docs.values()];
+  globalThis.__documentCatalog = cachedCatalog;
   return cachedCatalog;
 }
 
@@ -180,59 +193,68 @@ function pickChunksFromDocuments(documents, query, company, maxPerSource) {
   return chunks;
 }
 
-async function mapReduceResearch(query, documents, company) {
-  const batchSize = config.fullResearchBatchSize;
-  const maxPerSource = config.maxChunksPerSourceFull;
-  const companyLabel = company === 'CIFC' ? 'Cholamandalam (CIFC)' : 'Coforge';
-  const batchSummaries = [];
+function totalChunkChars(chunks) {
+  return chunks.reduce((sum, chunk) => sum + chunk.text.length, 0);
+}
 
-  for (let i = 0; i < documents.length; i += batchSize) {
-    const batch = documents.slice(i, i + batchSize);
-    const chunks = pickChunksFromDocuments(batch, query, company, maxPerSource);
-    const batchContext = buildContext(chunks);
+function enforceChunkBudget(chunks, documents, budget) {
+  const byDocKey = (chunk) => `${chunk.source}::${chunk.category}`;
+  const grouped = new Map();
 
-    const summary = await withRetry(() =>
-      generateText(
-        `You are researching ${companyLabel} investor documents for this question:
-${query}
-
-Read ALL excerpts in this batch. Extract every relevant fact, metric, period, and management comment. Cite source file names. Do not answer the user yet — return structured research notes only.
-
-${batchContext}`,
-        { maxTokens: 3000 }
-      )
-    );
-
-    batchSummaries.push(summary);
+  for (const chunk of chunks) {
+    const key = byDocKey(chunk);
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key).push(chunk);
   }
 
-  return batchSummaries.join('\n\n---\n\n');
+  const selected = [];
+  const selectedIds = new Set();
+
+  for (const doc of documents) {
+    const key = `${doc.source}::${doc.category}`;
+    const docChunks = grouped.get(key);
+    if (!docChunks?.length) continue;
+    selected.push(docChunks[0]);
+    selectedIds.add(docChunks[0].id);
+  }
+
+  let charCount = totalChunkChars(selected);
+
+  for (const chunk of chunks) {
+    if (selectedIds.has(chunk.id)) continue;
+    if (charCount + chunk.text.length > budget) continue;
+    selected.push(chunk);
+    selectedIds.add(chunk.id);
+    charCount += chunk.text.length;
+  }
+
+  return selected;
 }
 
 export async function researchCompanyLibrary(query, company) {
   const scoredDocs = scoreAllDocuments(query, company);
   const documents = filterDocsByCompany(scoredDocs, company);
-  const maxPerSource = config.maxChunksPerSourceFull;
-  const chunks = pickChunksFromDocuments(documents, query, company, maxPerSource);
-  const charCount = chunks.reduce((sum, chunk) => sum + chunk.text.length, 0);
+  const budget = config.maxDirectContextChars;
 
-  let context;
-  let selectionMethod = 'full_library';
+  let maxPerSource = config.maxChunksPerSourceFull;
+  let chunks = pickChunksFromDocuments(documents, query, company, maxPerSource);
 
-  if (charCount > config.maxDirectContextChars) {
-    context = await mapReduceResearch(query, documents, company);
-    selectionMethod = 'full_library_map_reduce';
-  } else {
-    context = buildContext(chunks);
+  while (totalChunkChars(chunks) > budget && maxPerSource > 1) {
+    maxPerSource -= 1;
+    chunks = pickChunksFromDocuments(documents, query, company, maxPerSource);
+  }
+
+  if (totalChunkChars(chunks) > budget) {
+    chunks = enforceChunkBudget(chunks, documents, budget);
   }
 
   return {
-    context,
+    context: buildContext(chunks),
     chunks,
     documents,
     scoredDocs,
-    selectionMethod,
-    charCount,
+    selectionMethod: 'full_library',
+    charCount: totalChunkChars(chunks),
   };
 }
 

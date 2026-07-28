@@ -132,7 +132,7 @@ export async function generateAnswer(question, history = [], currentDateTime = n
   const trimmed = question.trim();
   const activeCompany = normalizeCompany(company);
   const nowLabel = resolveCurrentDateTime(currentDateTime);
-  const cacheKey = `v12:${activeCompany}:${nowLabel.slice(0, 10)}:${trimmed.toLowerCase()}`;
+  const cacheKey = `v13:${activeCompany}:${nowLabel.slice(0, 10)}:${trimmed.toLowerCase()}`;
   const cached = getCachedAnswer(cacheKey);
   if (cached) return cached;
 

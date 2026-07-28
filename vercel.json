@@ -4,8 +4,8 @@
   "framework": "vite",
   "functions": {
     "api/chat.js": {
-      "maxDuration": 60,
-      "memory": 1024
+      "maxDuration": 120,
+      "memory": 3008
     },
     "api/health.js": {
       "memory": 512
