@@ -64,6 +64,11 @@ Greetings (hi, hello, hey, good morning, etc.):
 
 function getSystemPrompt(company = 'Coforge') {
   const base = company === 'CIFC' ? CIFC_PROMPT : COFORGE_PROMPT;
+  if (process.env.VERCEL === '1') {
+    return `${base}
+
+Rules: synthesize all context sources, cite document names and periods, use markdown tables for numeric data, end with one short follow-up question.`;
+  }
   return `${base}${SHARED_PROMPT}`;
 }
 

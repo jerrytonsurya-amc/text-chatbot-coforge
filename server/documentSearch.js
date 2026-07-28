@@ -286,9 +286,41 @@ function enforceChunkBudget(chunks, documents, budget) {
   return selected;
 }
 
+function limitDocumentsForRuntime(documents, company) {
+  if (process.env.VERCEL !== '1' || documents.length <= config.vercelMaxDocuments) {
+    return documents;
+  }
+
+  const categories =
+    company === 'CIFC'
+      ? ['CIFC Annual Reports', 'CIFC Investor Presentations', 'CIFC Earnings Transcripts']
+      : ['Annual Reports', 'Investor Presentations', 'Earnings Transcripts'];
+
+  const picked = [];
+  const used = new Set();
+
+  for (const category of categories) {
+    const doc = documents.find((item) => item.category === category);
+    if (!doc) continue;
+    const key = `${doc.source}::${doc.category}`;
+    picked.push(doc);
+    used.add(key);
+  }
+
+  for (const doc of documents) {
+    if (picked.length >= config.vercelMaxDocuments) break;
+    const key = `${doc.source}::${doc.category}`;
+    if (used.has(key)) continue;
+    picked.push(doc);
+    used.add(key);
+  }
+
+  return picked;
+}
+
 export async function researchCompanyLibrary(query, company) {
   const scoredDocs = scoreAllDocuments(query, company);
-  const documents = filterDocsByCompany(scoredDocs, company);
+  const documents = limitDocumentsForRuntime(filterDocsByCompany(scoredDocs, company), company);
   const budget = config.maxDirectContextChars;
 
   let maxPerSource = config.maxChunksPerSourceFull;
