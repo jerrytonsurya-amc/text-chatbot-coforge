@@ -26,7 +26,7 @@ export default function Message({ role, content, sources, isLoading }) {
                 <span />
                 <span />
               </div>
-              <div className="typing-status">Searching all documents and consolidating answer...</div>
+              <div className="typing-status">Analyzing all documents in this library...</div>
             </div>
           ) : isUser ? (
             <p>{content}</p>

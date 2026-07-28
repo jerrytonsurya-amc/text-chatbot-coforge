@@ -138,6 +138,104 @@ export function scoreAllDocuments(query, forcedCompany = null) {
     .sort((a, b) => b.combinedScore - a.combinedScore);
 }
 
+function sampleSpreadChunks(rescored, maxCount) {
+  if (rescored.length === 0) return [];
+  if (rescored.length <= maxCount) return rescored;
+
+  const len = rescored.length;
+  const pickIndices = [
+    0,
+    Math.floor(len / 4),
+    Math.floor(len / 2),
+    Math.floor((3 * len) / 4),
+    len - 1,
+  ]
+    .filter((value, index, arr) => value >= 0 && value < len && arr.indexOf(value) === index)
+    .slice(0, maxCount);
+
+  return pickIndices.map((index) => rescored[index]).filter(Boolean);
+}
+
+function pickTopChunksForDoc(doc, query, company, maxCount) {
+  const queryTokens = expandQueryTokens(tokenize(query));
+  const rescored = doc.scoredChunks?.length
+    ? doc.scoredChunks
+    : doc.chunks
+        .map((chunk) => ({ chunk, score: scoreChunk(chunk, queryTokens, company) }))
+        .sort((a, b) => b.score - a.score);
+
+  let selected = rescored.filter((item) => item.score > 0).slice(0, maxCount);
+  if (selected.length === 0) {
+    selected = sampleSpreadChunks(rescored, maxCount);
+  }
+
+  return selected.map((item) => item.chunk);
+}
+
+function pickChunksFromDocuments(documents, query, company, maxPerSource) {
+  const chunks = [];
+  for (const doc of documents) {
+    chunks.push(...pickTopChunksForDoc(doc, query, company, maxPerSource));
+  }
+  return chunks;
+}
+
+async function mapReduceResearch(query, documents, company) {
+  const batchSize = config.fullResearchBatchSize;
+  const maxPerSource = config.maxChunksPerSourceFull;
+  const companyLabel = company === 'CIFC' ? 'Cholamandalam (CIFC)' : 'Coforge';
+  const batchSummaries = [];
+
+  for (let i = 0; i < documents.length; i += batchSize) {
+    const batch = documents.slice(i, i + batchSize);
+    const chunks = pickChunksFromDocuments(batch, query, company, maxPerSource);
+    const batchContext = buildContext(chunks);
+
+    const summary = await withRetry(() =>
+      generateText(
+        `You are researching ${companyLabel} investor documents for this question:
+${query}
+
+Read ALL excerpts in this batch. Extract every relevant fact, metric, period, and management comment. Cite source file names. Do not answer the user yet — return structured research notes only.
+
+${batchContext}`,
+        { maxTokens: 3000 }
+      )
+    );
+
+    batchSummaries.push(summary);
+  }
+
+  return batchSummaries.join('\n\n---\n\n');
+}
+
+export async function researchCompanyLibrary(query, company) {
+  const scoredDocs = scoreAllDocuments(query, company);
+  const documents = filterDocsByCompany(scoredDocs, company);
+  const maxPerSource = config.maxChunksPerSourceFull;
+  const chunks = pickChunksFromDocuments(documents, query, company, maxPerSource);
+  const charCount = chunks.reduce((sum, chunk) => sum + chunk.text.length, 0);
+
+  let context;
+  let selectionMethod = 'full_library';
+
+  if (charCount > config.maxDirectContextChars) {
+    context = await mapReduceResearch(query, documents, company);
+    selectionMethod = 'full_library_map_reduce';
+  } else {
+    context = buildContext(chunks);
+  }
+
+  return {
+    context,
+    chunks,
+    documents,
+    scoredDocs,
+    selectionMethod,
+    charCount,
+  };
+}
+
 function parseDocumentSelection(text, maxId) {
   const match = text.match(/\[[\d,\s]+\]/);
   if (!match) return null;
@@ -267,6 +365,18 @@ Instructions:
 export async function selectRelevantDocuments(query, forcedCompany = null) {
   const targetCompany = forcedCompany || detectTargetCompany(query);
   const scoredDocs = scoreAllDocuments(query, targetCompany);
+
+  if (forcedCompany) {
+    const documents = filterDocsByCompany(scoredDocs, forcedCompany);
+    return {
+      documents,
+      scoredDocs,
+      selectionMethod: 'full_library',
+      targetCompany: forcedCompany,
+      fullResearch: true,
+    };
+  }
+
   const limit = config.maxDocumentsToUse;
 
   if (config.useAiDocumentSelection) {
@@ -296,8 +406,13 @@ export function retrieveChunksFromDocuments(
   documents,
   query,
   limit = config.maxContextChunks,
-  targetCompany = null
+  targetCompany = null,
+  { fullResearch = false } = {}
 ) {
+  if (fullResearch) {
+    return pickChunksFromDocuments(documents, query, targetCompany, config.maxChunksPerSourceFull);
+  }
+
   const queryTokens = expandQueryTokens(tokenize(query));
   const company = targetCompany || detectTargetCompany(query);
   const maxPerSource = config.maxChunksPerSource;
@@ -310,16 +425,7 @@ export function retrieveChunksFromDocuments(
     let selected = rescored.filter((item) => item.score > 0);
 
     if (selected.length === 0) {
-      const len = rescored.length;
-      const pickIndices = [
-        0,
-        Math.floor(len / 4),
-        Math.floor(len / 2),
-        Math.floor((3 * len) / 4),
-        len - 1,
-      ].filter((value, index, arr) => value >= 0 && value < len && arr.indexOf(value) === index);
-
-      selected = pickIndices.map((index) => rescored[index]).filter(Boolean);
+      selected = sampleSpreadChunks(rescored, maxPerSource);
     }
 
     return selected.slice(0, maxPerSource);

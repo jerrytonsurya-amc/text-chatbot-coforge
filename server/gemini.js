@@ -35,7 +35,7 @@ Rules:
 const SHARED_PROMPT = `
 Multi-source synthesis (CRITICAL):
 - The CONTEXT contains excerpts from multiple documents — Annual Reports, Investor Presentations, and Earnings Transcripts.
-- These excerpts were selected after searching the full document library for this question.
+- The full document library for this company was searched for every question; excerpts from every file in that library are included below.
 - Read ALL document sections in the context before answering. Do NOT answer from a single file when other sources also contain relevant information.
 - Merge and consolidate facts from every applicable source into one cohesive, unified answer.
 - When the same metric appears in multiple sources, combine them into one narrative or table; note the period and cite each source.
@@ -132,7 +132,7 @@ export async function generateAnswer(question, history = [], currentDateTime = n
   const trimmed = question.trim();
   const activeCompany = normalizeCompany(company);
   const nowLabel = resolveCurrentDateTime(currentDateTime);
-  const cacheKey = `v11:${activeCompany}:${nowLabel.slice(0, 10)}:${trimmed.toLowerCase()}`;
+  const cacheKey = `v12:${activeCompany}:${nowLabel.slice(0, 10)}:${trimmed.toLowerCase()}`;
   const cached = getCachedAnswer(cacheKey);
   if (cached) return cached;
 
@@ -152,10 +152,11 @@ export async function generateAnswer(question, history = [], currentDateTime = n
   }
 
   const chunks = await retrieveRelevantChunks(question, config.maxContextChunks, activeCompany);
-  const context = buildContext(chunks);
+  const context = chunks._context || buildContext(chunks);
   const searchMeta = chunks._meta || {};
+  const companyLabel = activeCompany === 'CIFC' ? 'Cholamandalam (CIFC)' : 'Coforge';
   const searchedNote = searchMeta.totalDocuments
-    ? `Documents searched: ${searchMeta.totalDocuments}. Documents used: ${searchMeta.documentsSelected || 'multiple'}. Company scope: ${activeCompany} only.`
+    ? `Full library research for ${companyLabel}: all ${searchMeta.totalDocuments} documents were analyzed (${searchMeta.documentsSelected} files included, ${searchMeta.chunksUsed} excerpts). Method: ${searchMeta.selectionMethod || 'full_library'}.`
     : '';
 
   const historyText = history
@@ -188,7 +189,9 @@ Answer:`;
         ? {
             documentsSearched: searchMeta.totalDocuments,
             documentsUsed: searchMeta.documentsSelected,
+            chunksUsed: searchMeta.chunksUsed,
             selectionMethod: searchMeta.selectionMethod,
+            fullResearch: searchMeta.fullResearch,
           }
         : undefined,
     };
