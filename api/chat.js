@@ -1,6 +1,13 @@
+import 'dotenv/config';
 import { generateAnswer } from '../server/gemini.js';
 
+export const config = {
+  maxDuration: 120,
+};
+
 export default async function handler(req, res) {
+  const started = Date.now();
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -18,9 +25,11 @@ export default async function handler(req, res) {
       currentDateTime,
       company
     );
+
+    console.log(`[chat] ${company} answered in ${Date.now() - started}ms`);
     return res.status(200).json({ answer, sources });
   } catch (err) {
-    console.error('Chat error:', err);
+    console.error(`[chat] failed after ${Date.now() - started}ms:`, err);
     return res.status(500).json({
       error: 'Failed to generate response',
       details: err.message,

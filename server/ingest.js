@@ -133,6 +133,9 @@ async function ingest() {
 
   console.log(`\nDone! Indexed ${allChunks.length} chunks -> ${INDEX_PATH}`);
 
+  console.log('\nBuilding company catalogs...');
+  execSync('node server/build-catalogs.js', { cwd: ROOT, stdio: 'inherit' });
+
   if (process.env.SKIP_EMBED === '1') {
     console.log('Skipping embeddings (SKIP_EMBED=1)');
     return;

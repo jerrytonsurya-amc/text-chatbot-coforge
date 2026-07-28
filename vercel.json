@@ -5,7 +5,8 @@
   "functions": {
     "api/chat.js": {
       "maxDuration": 120,
-      "memory": 3008
+      "memory": 3008,
+      "includeFiles": "data/catalogs/**"
     },
     "api/health.js": {
       "memory": 512

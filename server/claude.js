@@ -15,7 +15,7 @@ function getClient() {
 export async function generateText(prompt, options = {}) {
   const response = await getClient().messages.create({
     model: options.model || config.chatModel,
-    max_tokens: options.maxTokens || 8192,
+    max_tokens: options.maxTokens || 4096,
     messages: [{ role: 'user', content: prompt }],
   });
 

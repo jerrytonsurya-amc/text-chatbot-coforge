@@ -16,6 +16,11 @@ export async function sendChatMessage(
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
+    if (res.status === 504) {
+      throw new Error(
+        'The request timed out on the server. Please try again — the first request after idle can be slower.'
+      );
+    }
     throw new Error(err.details || err.error || 'Failed to get response');
   }
 

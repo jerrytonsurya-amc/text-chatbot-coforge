@@ -9,6 +9,16 @@ import { generateText } from './claude.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_PATH = path.join(__dirname, '..', 'data', 'knowledge-index.json');
+const CATALOG_DIR = path.join(__dirname, '..', 'data', 'catalogs');
+
+function getCatalogPath(company) {
+  const key = company === 'CIFC' ? 'cifc' : 'coforge';
+  return path.join(CATALOG_DIR, `${key}.json`);
+}
+
+function getChunkCompany(chunk) {
+  return chunk.company || (chunk.category.startsWith('CIFC') ? 'CIFC' : 'Coforge');
+}
 
 const QUERY_EXPANSIONS = {
   revenue: ['revenue', 'income', 'topline', 'sales', 'turnover', 'operations'],
@@ -92,7 +102,11 @@ function scoreChunk(chunk, queryTokens, targetCompany = null) {
   return score;
 }
 
-export function buildDocumentCatalog() {
+export function buildDocumentCatalog(company = null) {
+  if (company) {
+    return loadCompanyCatalog(company);
+  }
+
   if (cachedCatalog) return cachedCatalog;
   if (globalThis.__documentCatalog) {
     cachedCatalog = globalThis.__documentCatalog;
@@ -109,6 +123,7 @@ export function buildDocumentCatalog() {
         id: docs.size + 1,
         source: chunk.source,
         category: chunk.category,
+        company: getChunkCompany(chunk),
         chunks: [],
       });
     }
@@ -120,12 +135,52 @@ export function buildDocumentCatalog() {
   return cachedCatalog;
 }
 
-export function scoreAllDocuments(query, forcedCompany = null) {
-  const catalog = buildDocumentCatalog();
-  const queryTokens = expandQueryTokens(tokenize(query));
-  const targetCompany = forcedCompany || detectTargetCompany(query);
+function loadCompanyCatalog(company) {
+  const normalized = company === 'CIFC' ? 'CIFC' : 'Coforge';
+  const cacheKey = `__catalog_${normalized}`;
 
-  const filteredCatalog = filterDocsByCompany(catalog, targetCompany);
+  if (globalThis[cacheKey]) {
+    return globalThis[cacheKey];
+  }
+
+  const catalogPath = getCatalogPath(normalized);
+  if (fs.existsSync(catalogPath)) {
+    const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf-8'));
+    globalThis[cacheKey] = catalog;
+    return catalog;
+  }
+
+  const index = loadIndex();
+  const docs = new Map();
+
+  for (const chunk of index.chunks) {
+    if (getChunkCompany(chunk) !== normalized) continue;
+    const key = `${chunk.source}::${chunk.category}`;
+    if (!docs.has(key)) {
+      docs.set(key, {
+        id: docs.size + 1,
+        source: chunk.source,
+        category: chunk.category,
+        company: normalized,
+        chunks: [],
+      });
+    }
+    docs.get(key).chunks.push(chunk);
+  }
+
+  const catalog = [...docs.values()];
+  globalThis[cacheKey] = catalog;
+  return catalog;
+}
+
+export function scoreAllDocuments(query, forcedCompany = null) {
+  const targetCompany = forcedCompany || detectTargetCompany(query);
+  const catalog = buildDocumentCatalog(targetCompany || undefined);
+  const queryTokens = expandQueryTokens(tokenize(query));
+
+  const filteredCatalog = targetCompany
+    ? catalog
+    : filterDocsByCompany(catalog, targetCompany);
 
   return filteredCatalog
     .map((doc) => {
@@ -272,7 +327,7 @@ function parseDocumentSelection(text, maxId) {
 }
 
 function getDocCompany(doc) {
-  return doc.chunks[0]?.company || (doc.category.startsWith('CIFC') ? 'CIFC' : 'Coforge');
+  return doc.company || doc.chunks[0]?.company || (doc.category.startsWith('CIFC') ? 'CIFC' : 'Coforge');
 }
 
 function filterDocsByCompany(scoredDocs, targetCompany) {
