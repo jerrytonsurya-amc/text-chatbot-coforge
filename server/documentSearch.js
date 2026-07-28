@@ -16,6 +16,15 @@ function getCatalogPath(company) {
   return path.join(CATALOG_DIR, `${key}.json`);
 }
 
+function getSplitCatalogDir(company) {
+  const key = company === 'CIFC' ? 'cifc' : 'coforge';
+  return path.join(CATALOG_DIR, key);
+}
+
+function hasSplitCatalog(company) {
+  return fs.existsSync(path.join(getSplitCatalogDir(company), 'index.json'));
+}
+
 function getChunkCompany(chunk) {
   return chunk.company || (chunk.category.startsWith('CIFC') ? 'CIFC' : 'Coforge');
 }
@@ -38,6 +47,8 @@ const QUERY_EXPANSIONS = {
 
 let cachedIndex = null;
 let cachedCatalog = null;
+const searchIndexCache = new Map();
+const documentFileCache = new Map();
 
 function loadIndex() {
   if (cachedIndex) return cachedIndex;
@@ -81,28 +92,189 @@ function detectTargetCompany(query) {
   return detected;
 }
 
+function getChunkTermSet(chunk) {
+  if (chunk._termSet) return chunk._termSet;
+  if (chunk.terms?.length) {
+    chunk._termSet = new Set(chunk.terms);
+    return chunk._termSet;
+  }
+  chunk._termSet = new Set(tokenize(chunk.text));
+  return chunk._termSet;
+}
+
 function scoreChunk(chunk, queryTokens, targetCompany = null) {
-  const chunkTokens = new Set(tokenize(chunk.text));
-  const sourceTokens = tokenize(chunk.source);
+  const chunkTokens = getChunkTermSet(chunk);
+  const sourceTokens = tokenize(chunk.source || '');
   let score = 0;
 
   for (const token of queryTokens) {
     if (chunkTokens.has(token)) score += 2;
     if (sourceTokens.some((s) => s.includes(token) || token.includes(s))) score += 4;
-    if (chunk.category.toLowerCase().includes(token)) score += 1;
+    if (chunk.category?.toLowerCase().includes(token)) score += 1;
   }
 
   const queryStr = queryTokens.join(' ');
-  if (chunk.text.toLowerCase().includes(queryStr)) score += 8;
+  if (chunk.text?.toLowerCase().includes(queryStr)) score += 8;
 
-  const company = chunk.company || (chunk.category.startsWith('CIFC') ? 'CIFC' : 'Coforge');
+  const company = chunk.company || (chunk.category?.startsWith('CIFC') ? 'CIFC' : 'Coforge');
   if (targetCompany === company) score += 12;
   if (targetCompany && targetCompany !== company) score = Math.max(0, score - 8);
 
   return score;
 }
 
+function loadSearchIndex(company) {
+  const normalized = company === 'CIFC' ? 'CIFC' : 'Coforge';
+  const cacheKey = `index:${normalized}`;
+
+  if (searchIndexCache.has(cacheKey)) {
+    return searchIndexCache.get(cacheKey);
+  }
+
+  const globalKey = `__searchIndex_${normalized}`;
+  if (globalThis[globalKey]) {
+    searchIndexCache.set(cacheKey, globalThis[globalKey]);
+    return globalThis[globalKey];
+  }
+
+  const indexPath = path.join(getSplitCatalogDir(normalized), 'index.json');
+  const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
+  searchIndexCache.set(cacheKey, index);
+  globalThis[globalKey] = index;
+  return index;
+}
+
+function loadDocumentFile(company, fileName) {
+  const normalized = company === 'CIFC' ? 'CIFC' : 'Coforge';
+  const cacheKey = `${normalized}/${fileName}`;
+
+  if (documentFileCache.has(cacheKey)) {
+    return documentFileCache.get(cacheKey);
+  }
+
+  const globalKey = `__doc_${cacheKey}`;
+  if (globalThis[globalKey]) {
+    documentFileCache.set(cacheKey, globalThis[globalKey]);
+    return globalThis[globalKey];
+  }
+
+  const docPath = path.join(getSplitCatalogDir(normalized), 'docs', fileName);
+  const doc = JSON.parse(fs.readFileSync(docPath, 'utf-8'));
+  documentFileCache.set(cacheKey, doc);
+  globalThis[globalKey] = doc;
+  return doc;
+}
+
+function hydrateChunk(chunk, doc) {
+  return {
+    ...chunk,
+    source: doc.source,
+    category: doc.category,
+    company: doc.company,
+  };
+}
+
+function scoreDocMeta(docMeta, queryTokens, targetCompany = null) {
+  const docTerms = docMeta._termSet || new Set(docMeta.terms || []);
+  docMeta._termSet = docTerms;
+  const sourceTokens = tokenize(docMeta.source);
+  let maxScore = 0;
+  let totalScore = 0;
+  let matchCount = 0;
+
+  for (const token of queryTokens) {
+    if (docTerms.has(token)) {
+      maxScore += 2;
+      totalScore += 2;
+      matchCount += 1;
+    }
+    if (sourceTokens.some((s) => s.includes(token) || token.includes(s))) {
+      maxScore += 4;
+      totalScore += 4;
+    }
+    if (docMeta.category.toLowerCase().includes(token)) {
+      maxScore += 1;
+      totalScore += 1;
+    }
+  }
+
+  const company = docMeta.company || (docMeta.category.startsWith('CIFC') ? 'CIFC' : 'Coforge');
+  if (targetCompany === company) {
+    maxScore += 12;
+    totalScore += 12;
+  }
+
+  return {
+    ...docMeta,
+    chunks: [],
+    matchCount: matchCount || (maxScore > 0 ? 1 : 0),
+    maxScore,
+    totalScore,
+    combinedScore: maxScore * 4 + totalScore + (matchCount || (maxScore > 0 ? 1 : 0)) * 2,
+    preview: docMeta.preview || '',
+  };
+}
+
+function loadAndScoreDocument(company, docMeta, queryTokens, targetCompany) {
+  const loaded = loadDocumentFile(company, docMeta.file);
+  const scoredChunks = loaded.chunks
+    .map((chunk) => ({
+      chunk: hydrateChunk(chunk, loaded),
+      score: scoreChunk(hydrateChunk(chunk, loaded), queryTokens, targetCompany),
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  const matching = scoredChunks.filter((item) => item.score > 0);
+  const maxScore = matching[0]?.score || scoredChunks[0]?.score || docMeta.maxScore || 0;
+  const totalScore =
+    matching.reduce((sum, item) => sum + item.score, 0) || docMeta.totalScore || 0;
+  const topPreview = matching[0]?.chunk.text || scoredChunks[0]?.chunk.text || docMeta.preview || '';
+
+  return {
+    id: docMeta.id,
+    source: loaded.source,
+    category: loaded.category,
+    company: loaded.company,
+    file: docMeta.file,
+    chunks: loaded.chunks.map((chunk) => hydrateChunk(chunk, loaded)),
+    scoredChunks,
+    matchCount: matching.length || docMeta.matchCount || 0,
+    maxScore,
+    totalScore,
+    combinedScore: maxScore * 4 + totalScore + matching.length * 2,
+    preview: topPreview.slice(0, 280).replace(/\s+/g, ' ').trim(),
+  };
+}
+
+function scoreFromSplitCatalog(query, targetCompany) {
+  const index = loadSearchIndex(targetCompany);
+  const queryTokens = expandQueryTokens(tokenize(query));
+  const ranked = index.documents
+    .map((doc) => scoreDocMeta(doc, queryTokens, targetCompany))
+    .sort((a, b) => b.combinedScore - a.combinedScore);
+
+  const docsToLoad = limitDocumentsForRuntime(ranked, targetCompany);
+  return docsToLoad.map((docMeta) => loadAndScoreDocument(targetCompany, docMeta, queryTokens, targetCompany));
+}
+
+function getSplitCatalogDocumentCount(company) {
+  if (!hasSplitCatalog(company)) return null;
+  return loadSearchIndex(company).documents.length;
+}
+
 export function buildDocumentCatalog(company = null) {
+  if (company && hasSplitCatalog(company)) {
+    const index = loadSearchIndex(company);
+    return index.documents.map((doc) => ({
+      id: doc.id,
+      source: doc.source,
+      category: doc.category,
+      company: doc.company,
+      chunks: [],
+      chunkCount: doc.chunkCount,
+    }));
+  }
+
   if (company) {
     return loadCompanyCatalog(company);
   }
@@ -175,6 +347,11 @@ function loadCompanyCatalog(company) {
 
 export function scoreAllDocuments(query, forcedCompany = null) {
   const targetCompany = forcedCompany || detectTargetCompany(query);
+
+  if (targetCompany && process.env.VERCEL === '1' && hasSplitCatalog(targetCompany)) {
+    return scoreFromSplitCatalog(query, targetCompany);
+  }
+
   const catalog = buildDocumentCatalog(targetCompany || undefined);
   const queryTokens = expandQueryTokens(tokenize(query));
 
@@ -319,8 +496,12 @@ function limitDocumentsForRuntime(documents, company) {
 }
 
 export async function researchCompanyLibrary(query, company) {
+  const totalDocuments = getSplitCatalogDocumentCount(company);
   const scoredDocs = scoreAllDocuments(query, company);
-  const documents = limitDocumentsForRuntime(filterDocsByCompany(scoredDocs, company), company);
+  const documents =
+    totalDocuments != null
+      ? scoredDocs
+      : limitDocumentsForRuntime(filterDocsByCompany(scoredDocs, company), company);
   const budget = config.maxDirectContextChars;
 
   let maxPerSource = config.maxChunksPerSourceFull;
@@ -342,6 +523,7 @@ export async function researchCompanyLibrary(query, company) {
     scoredDocs,
     selectionMethod: 'full_library',
     charCount: totalChunkChars(chunks),
+    totalDocuments: totalDocuments ?? documents.length,
   };
 }
 
@@ -580,9 +762,9 @@ export function buildContext(chunks) {
   return sections.join('\n\n---\n\n');
 }
 
-export function getSearchStats(scoredDocs, selectedDocs, chunks) {
+export function getSearchStats(scoredDocs, selectedDocs, chunks, totalDocuments = null) {
   return {
-    totalDocuments: scoredDocs.length,
+    totalDocuments: totalDocuments ?? scoredDocs.length,
     documentsSelected: selectedDocs.length,
     chunksUsed: chunks.length,
     selectedSources: selectedDocs.map((doc) => `${doc.source} (${doc.category})`),

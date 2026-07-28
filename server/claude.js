@@ -7,7 +7,10 @@ function getClient() {
   if (!client) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error('ANTHROPIC_API_KEY is not configured');
-    client = new Anthropic({ apiKey });
+    client = new Anthropic({
+      apiKey,
+      timeout: process.env.VERCEL === '1' ? 45000 : 120000,
+    });
   }
   return client;
 }
@@ -16,7 +19,7 @@ export async function generateText(prompt, options = {}) {
   const isVercel = process.env.VERCEL === '1';
   const response = await getClient().messages.create({
     model: options.model || config.chatModel,
-    max_tokens: options.maxTokens || (isVercel ? 2048 : 4096),
+    max_tokens: options.maxTokens || (isVercel ? 1536 : 4096),
     messages: [{ role: 'user', content: prompt }],
   });
 

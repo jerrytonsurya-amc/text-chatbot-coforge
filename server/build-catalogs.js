@@ -11,6 +11,16 @@ function getChunkCompany(chunk) {
   return chunk.company || (chunk.category.startsWith('CIFC') ? 'CIFC' : 'Coforge');
 }
 
+function extractTerms(text, maxTerms = 60) {
+  const tokens = text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter((word) => word.length > 2);
+
+  return [...new Set(tokens)].slice(0, maxTerms);
+}
+
 function buildCatalogFromChunks(chunks) {
   const docs = new Map();
 
@@ -31,12 +41,78 @@ function buildCatalogFromChunks(chunks) {
   return [...docs.values()];
 }
 
-function writeCatalog(company, chunks) {
+function writeMonolithicCatalog(company, chunks) {
   const catalog = buildCatalogFromChunks(chunks);
   const outPath = path.join(CATALOG_DIR, `${company.toLowerCase()}.json`);
   fs.writeFileSync(outPath, JSON.stringify(catalog));
   const sizeMb = (fs.statSync(outPath).size / 1024 / 1024).toFixed(2);
-  console.log(`${company}: ${catalog.length} documents, ${chunks.length} chunks -> ${outPath} (${sizeMb} MB)`);
+  console.log(`${company} monolith: ${catalog.length} docs -> ${outPath} (${sizeMb} MB)`);
+}
+
+function writeSplitCatalog(company, chunks) {
+  const catalog = buildCatalogFromChunks(chunks);
+  const companyDir = path.join(CATALOG_DIR, company.toLowerCase());
+  const docsDir = path.join(companyDir, 'docs');
+  fs.mkdirSync(docsDir, { recursive: true });
+
+  const indexDocs = [];
+
+  for (const doc of catalog) {
+    const fileName = `${String(doc.id).padStart(2, '0')}.json`;
+    const docTerms = new Set();
+    const compactChunks = doc.chunks.map((chunk) => {
+      const terms = extractTerms(chunk.text);
+      terms.forEach((term) => docTerms.add(term));
+      return {
+        id: chunk.id,
+        text: chunk.text,
+        terms,
+      };
+    });
+
+    fs.writeFileSync(
+      path.join(docsDir, fileName),
+      JSON.stringify({
+        source: doc.source,
+        category: doc.category,
+        company: doc.company,
+        chunks: compactChunks,
+      })
+    );
+
+    const preview = (doc.chunks[0]?.text || '').slice(0, 280).replace(/\s+/g, ' ').trim();
+    indexDocs.push({
+      id: doc.id,
+      source: doc.source,
+      category: doc.category,
+      company: doc.company,
+      file: fileName,
+      terms: [...docTerms].slice(0, 200),
+      preview,
+      chunkCount: doc.chunks.length,
+    });
+  }
+
+  const indexPath = path.join(companyDir, 'index.json');
+  fs.writeFileSync(
+    indexPath,
+    JSON.stringify({
+      company,
+      version: 2,
+      documents: indexDocs,
+    })
+  );
+
+  const indexKb = (fs.statSync(indexPath).size / 1024).toFixed(1);
+  const docsMb = (
+    indexDocs.reduce((sum, doc) => sum + fs.statSync(path.join(docsDir, doc.file)).size, 0) /
+    1024 /
+    1024
+  ).toFixed(2);
+
+  console.log(
+    `${company} split: ${indexDocs.length} docs, index ${indexKb} KB, doc files ${docsMb} MB -> ${companyDir}`
+  );
 }
 
 function buildCatalogs() {
@@ -50,8 +126,10 @@ function buildCatalogs() {
   const coforgeChunks = index.chunks.filter((chunk) => getChunkCompany(chunk) === 'Coforge');
 
   fs.mkdirSync(CATALOG_DIR, { recursive: true });
-  writeCatalog('CIFC', cifcChunks);
-  writeCatalog('Coforge', coforgeChunks);
+  writeSplitCatalog('CIFC', cifcChunks);
+  writeSplitCatalog('Coforge', coforgeChunks);
+  writeMonolithicCatalog('CIFC', cifcChunks);
+  writeMonolithicCatalog('Coforge', coforgeChunks);
   console.log('\nDone.');
 }
 

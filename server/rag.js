@@ -17,7 +17,7 @@ export async function retrieveRelevantChunks(query, limit = config.maxContextChu
     const chunks = research.chunks;
     chunks._context = research.context;
     chunks._meta = {
-      ...getSearchStats(research.scoredDocs, research.documents, chunks),
+      ...getSearchStats(research.scoredDocs, research.documents, chunks, research.totalDocuments),
       selectionMethod: research.selectionMethod,
       targetCompany: company,
       fullResearch: true,
@@ -40,7 +40,10 @@ export async function retrieveRelevantChunks(query, limit = config.maxContextChu
 export function getIndexStats() {
   const catalog = buildDocumentCatalog();
   const embeddings = loadEmbeddings();
-  const totalChunks = catalog.reduce((sum, doc) => sum + doc.chunks.length, 0);
+  const totalChunks = catalog.reduce(
+    (sum, doc) => sum + (doc.chunks?.length || doc.chunkCount || 0),
+    0
+  );
 
   return {
     totalChunks,
