@@ -115,8 +115,19 @@ function writeSplitCatalog(company, chunks) {
   );
 }
 
+function hasCommittedCatalogs() {
+  return (
+    fs.existsSync(path.join(CATALOG_DIR, 'cifc', 'index.json')) &&
+    fs.existsSync(path.join(CATALOG_DIR, 'coforge', 'index.json'))
+  );
+}
+
 function buildCatalogs() {
   if (!fs.existsSync(INDEX_PATH)) {
+    if (hasCommittedCatalogs()) {
+      console.log('Knowledge index not found — using committed split catalogs.');
+      return;
+    }
     throw new Error(`Missing ${INDEX_PATH}. Run: npm run ingest:fast`);
   }
 

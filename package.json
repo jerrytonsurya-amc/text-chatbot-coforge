@@ -7,7 +7,7 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "vite",
     "dev:server": "node server/index.js",
-    "build": "node server/build-catalogs.js && vite build",
+    "build": "vite build",
     "build:catalogs": "node server/build-catalogs.js",
     "ingest": "node server/ingest.js",
     "ingest:fast": "SKIP_EMBED=1 node server/ingest.js",
