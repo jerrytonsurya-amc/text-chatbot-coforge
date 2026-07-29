@@ -3,14 +3,10 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "functions": {
-    "api/*.js": {
-      "maxDuration": 120,
-      "memory": 3008
-    },
     "api/chat.js": {
-      "maxDuration": 120,
-      "memory": 3008,
-      "includeFiles": "data/catalogs/**"
+      "maxDuration": 300,
+      "memory": 2048,
+      "includeFiles": "data/catalogs/{cifc,coforge}/**"
     },
     "api/health.js": {
       "memory": 512

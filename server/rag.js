@@ -38,6 +38,40 @@ export async function retrieveRelevantChunks(query, limit = config.maxContextChu
 }
 
 export function getIndexStats() {
+  if (process.env.VERCEL === '1') {
+    const embeddings = loadEmbeddings();
+    let totalDocuments = 0;
+    let totalChunks = 0;
+    const categories = new Set();
+
+    for (const company of ['Coforge', 'CIFC']) {
+      try {
+        const catalog = buildDocumentCatalog(company);
+        totalDocuments += catalog.length;
+        totalChunks += catalog.reduce(
+          (sum, doc) => sum + (doc.chunks?.length || doc.chunkCount || 0),
+          0
+        );
+        catalog.forEach((doc) => categories.add(doc.category));
+      } catch {
+        // Ignore missing split catalogs during health checks.
+      }
+    }
+
+    return {
+      totalChunks,
+      totalDocuments,
+      categories: [...categories],
+      embeddings: embeddings
+        ? {
+            model: embeddings.model,
+            dimension: embeddings.dimension,
+            chunkCount: embeddings.chunkCount,
+          }
+        : null,
+    };
+  }
+
   const catalog = buildDocumentCatalog();
   const embeddings = loadEmbeddings();
   const totalChunks = catalog.reduce(

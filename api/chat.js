@@ -1,10 +1,10 @@
 import 'dotenv/config';
 import { generateAnswer } from '../server/gemini.js';
 
-export const maxDuration = 120;
+export const maxDuration = 300;
 
 export const config = {
-  maxDuration: 120,
+  maxDuration: 300,
 };
 
 export default async function handler(req, res) {
