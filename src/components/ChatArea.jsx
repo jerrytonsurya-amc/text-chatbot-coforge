@@ -80,11 +80,16 @@ export default function ChatArea({ messages, isLoading, onSend, disabled }) {
     <div className="chat-area">
       <div className="chat-header">
         <div className="chat-header-title">{config.title}</div>
+        <div className="chat-header-badge">
+          <span className="chat-header-badge-dot" aria-hidden="true" />
+          Full library · 26 documents searched per answer
+        </div>
       </div>
 
       <div className="messages-container">
         {!hasMessages ? (
           <div className="welcome-screen">
+            <div className="welcome-badge">Cholamandalam Investment & Finance</div>
             <h1>How can I help you today?</h1>
             <p>{config.welcome}</p>
             <div className="suggestions">

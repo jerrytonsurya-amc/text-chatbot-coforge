@@ -6,8 +6,19 @@ export default function Sidebar({ threads, activeThreadId, onSelectThread, onNew
 
   return (
     <aside className="sidebar">
+      <div className="sidebar-brand">
+        <div className="brand-mark">
+          <div className="brand-icon" aria-hidden="true">
+            C
+          </div>
+          <div className="brand-text">
+            <span className="brand-name">Chola</span>
+            <span className="brand-tagline">CIFC Knowledge Assistant</span>
+          </div>
+        </div>
+      </div>
       <div className="sidebar-header">
-        <button className="new-chat-btn" onClick={onNewChat}>
+        <button type="button" className="new-chat-btn" onClick={onNewChat}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 5v14M5 12h14" />
           </svg>
@@ -16,6 +27,9 @@ export default function Sidebar({ threads, activeThreadId, onSelectThread, onNew
       </div>
 
       <div className="thread-list">
+        {threads.length === 0 ? (
+          <p className="thread-list-empty">Start a new chat to explore CIFC reports and transcripts.</p>
+        ) : null}
         {threads.map((thread) => (
           <div
             key={thread.id}
@@ -44,7 +58,7 @@ export default function Sidebar({ threads, activeThreadId, onSelectThread, onNew
         ))}
       </div>
 
-      <div className="sidebar-footer">Cholamandalam (CIFC) Knowledge Assistant</div>
+      <div className="sidebar-footer">Full-library research · 26 CIFC documents</div>
     </aside>
   );
 }

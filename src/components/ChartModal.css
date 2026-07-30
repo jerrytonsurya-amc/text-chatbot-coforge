@@ -10,9 +10,9 @@
 }
 
 .chart-modal {
-  background: #1a1a1a;
-  border: 1px solid #3a3a3a;
-  border-radius: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
   width: 100%;
   max-width: 720px;
   max-height: 90vh;
@@ -26,14 +26,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--border);
 }
 
 .chart-modal-header h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
-  color: #ececec;
+  color: var(--text);
 }
 
 .chart-modal-close {
@@ -52,21 +52,21 @@
 
 .chart-modal-body {
   padding: 20px;
-  background: #1a1a1a;
+  background: var(--bg-surface);
 }
 
 .chart-modal-footer {
   padding: 12px 20px 20px;
   display: flex;
   justify-content: flex-end;
-  border-top: 1px solid #2a2a2a;
+  border-top: 1px solid var(--border);
 }
 
 .chart-download-btn {
-  background: #19c37d;
-  color: #0d1117;
+  background: linear-gradient(145deg, var(--accent), #c4840f);
+  color: #1a1200;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 600;
@@ -74,7 +74,7 @@
 }
 
 .chart-download-btn:hover {
-  background: #1ed990;
+  filter: brightness(1.08);
 }
 
 .table-block {
@@ -91,19 +91,20 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #2a2a2a;
-  border: 1px solid #444;
-  color: #ececec;
-  border-radius: 8px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-strong);
+  color: var(--text-muted);
+  border-radius: var(--radius-md);
   padding: 6px 12px;
   font-size: 12px;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
 .view-chart-btn:hover {
-  background: #333;
-  border-color: #555;
+  background: var(--bg-hover);
+  border-color: rgba(229, 160, 25, 0.35);
+  color: var(--text);
 }
 
 .view-chart-btn svg {
