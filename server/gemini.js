@@ -10,19 +10,10 @@ import {
 } from './retry.js';
 import { config } from './config.js';
 import { ensureNumericTables } from './formatMarkdown.js';
-import { getTabMismatchMessage } from '../shared/companyGuard.js';
+import { detectCoforgeQuestion, getOutOfScopeMessage } from '../shared/companyGuard.js';
+import { COMPANY } from '../shared/company.js';
 
-const COFORGE_PROMPT = `You are a knowledgeable assistant for Coforge Limited. Answer using ONLY the provided context from Coforge Annual Reports, Investor Presentations, and Earnings Transcripts.
-
-Rules:
-1. Be clear, structured, and easy to understand.
-2. If the answer is not in the context, say so clearly.
-3. Cite source document names when stating facts or figures.
-4. Always mention the period (FY, quarter, or date) for financial figures.
-5. Use the CURRENT DATE AND TIME provided in each request to interpret "latest", "recent", "current", "last quarter/FY", and similar phrases. Coforge's financial year is April–March (e.g. FY26 = Apr 2025–Mar 2026). Prefer the most recent period available in the documents that is on or before the current date.
-6. Use ONLY Coforge documents in the context. Never use or mention Cholamandalam/CIFC data. If the user asks about another company, tell them to switch tabs.`;
-
-const CIFC_PROMPT = `You are a knowledgeable assistant for Cholamandalam Investment and Finance Company (CIFC), also known as Chola. Answer using ONLY the provided context from CIFC Annual Reports, Investor Presentations, and Earnings Transcripts.
+const SYSTEM_PROMPT = `You are a knowledgeable assistant for Cholamandalam Investment and Finance Company (CIFC), also known as Chola. Answer using ONLY the provided context from CIFC Annual Reports, Investor Presentations, and Earnings Transcripts.
 
 Rules:
 1. Be clear, structured, and easy to understand.
@@ -30,12 +21,10 @@ Rules:
 3. Cite source document names when stating facts or figures.
 4. Always mention the period (FY, quarter, or date) for financial figures.
 5. Use the CURRENT DATE AND TIME provided in each request to interpret "latest", "recent", "current", "last quarter/FY", and similar phrases. CIFC's financial year is April–March (e.g. FY26 = Apr 2025–Mar 2026). Prefer the most recent period available in the documents that is on or before the current date.
-6. Use ONLY CIFC/Cholamandalam documents in the context. Never use or mention Coforge data. If the user asks about another company, tell them to switch tabs.`;
 
-const SHARED_PROMPT = `
 Multi-source synthesis (CRITICAL):
 - The CONTEXT contains excerpts from multiple documents — Annual Reports, Investor Presentations, and Earnings Transcripts.
-- The full document library for this company was searched for every question; excerpts from every file in that library are included below.
+- The full CIFC document library was searched for every question; excerpts from every file in that library are included below.
 - Read ALL document sections in the context before answering. Do NOT answer from a single file when other sources also contain relevant information.
 - Merge and consolidate facts from every applicable source into one cohesive, unified answer.
 - When the same metric appears in multiple sources, combine them into one narrative or table; note the period and cite each source.
@@ -59,22 +48,8 @@ Follow-up (REQUIRED for substantive answers):
 
 Greetings (hi, hello, hey, good morning, etc.):
 - Reply warmly and briefly. Do not pull from documents or cite sources.
-- Invite them to explore company data, e.g. ask what they'd like to research today.
+- Invite them to explore CIFC data, e.g. ask what they'd like to research today.
 - Skip tables and document citations for pure greetings.`;
-
-function getSystemPrompt(company = 'Coforge') {
-  const base = company === 'CIFC' ? CIFC_PROMPT : COFORGE_PROMPT;
-  if (process.env.VERCEL === '1') {
-    return `${base}
-
-Rules: synthesize all context sources, cite document names and periods, use markdown tables for numeric data, end with one short follow-up question.`;
-  }
-  return `${base}${SHARED_PROMPT}`;
-}
-
-function normalizeCompany(company) {
-  return company === 'CIFC' ? 'CIFC' : 'Coforge';
-}
 
 async function generateWithModel(modelName, prompt) {
   return generateText(prompt, { model: modelName });
@@ -86,17 +61,9 @@ function isGreeting(text) {
   return GREETING_PATTERN.test(text.trim());
 }
 
-function greetingReply(company = 'Coforge') {
-  if (company === 'CIFC') {
-    return (
-      "Hello! I'm your Chola (CIFC) knowledge assistant — I can help with annual reports, " +
-      'investor presentations, and earnings call transcripts.\n\n' +
-      'What would you like to research today?'
-    );
-  }
-
+function greetingReply() {
   return (
-    "Hello! I'm your Coforge knowledge assistant — I can help with annual reports, " +
+    "Hello! I'm your Chola (CIFC) knowledge assistant — I can help with annual reports, " +
     'investor presentations, and earnings call transcripts.\n\n' +
     'What would you like to research today?'
   );
@@ -133,35 +100,32 @@ function resolveCurrentDateTime(currentDateTime) {
   });
 }
 
-export async function generateAnswer(question, history = [], currentDateTime = null, company = 'Coforge') {
+export async function generateAnswer(question, history = [], currentDateTime = null) {
   const trimmed = question.trim();
-  const activeCompany = normalizeCompany(company);
   const nowLabel = resolveCurrentDateTime(currentDateTime);
-  const cacheKey = `v13:${activeCompany}:${nowLabel.slice(0, 10)}:${trimmed.toLowerCase()}`;
+  const cacheKey = `v14:${COMPANY}:${nowLabel.slice(0, 10)}:${trimmed.toLowerCase()}`;
   const cached = getCachedAnswer(cacheKey);
   if (cached) return cached;
 
   const modelName = getActiveModel();
 
   if (isGreeting(trimmed) && history.length === 0) {
-    const result = { answer: greetingReply(activeCompany), sources: [], model: modelName };
+    const result = { answer: greetingReply(), sources: [], model: modelName };
     setCachedAnswer(cacheKey, result);
     return result;
   }
 
-  const tabMismatch = getTabMismatchMessage(activeCompany, trimmed);
-  if (tabMismatch) {
-    const result = { answer: tabMismatch, sources: [], model: modelName, guardrail: 'company_tab' };
+  if (detectCoforgeQuestion(trimmed)) {
+    const result = { answer: getOutOfScopeMessage(), sources: [], model: modelName, guardrail: 'out_of_scope' };
     setCachedAnswer(cacheKey, result);
     return result;
   }
 
-  const chunks = await retrieveRelevantChunks(question, config.maxContextChunks, activeCompany);
+  const chunks = await retrieveRelevantChunks(question, config.maxContextChunks);
   const context = chunks._context || buildContext(chunks);
   const searchMeta = chunks._meta || {};
-  const companyLabel = activeCompany === 'CIFC' ? 'Cholamandalam (CIFC)' : 'Coforge';
   const searchedNote = searchMeta.totalDocuments
-    ? `Full library research for ${companyLabel}: all ${searchMeta.totalDocuments} documents were analyzed (${searchMeta.documentsSelected} files included, ${searchMeta.chunksUsed} excerpts). Method: ${searchMeta.selectionMethod || 'full_library'}.`
+    ? `Full library research for Cholamandalam (CIFC): all ${searchMeta.totalDocuments} documents were analyzed (${searchMeta.documentsSelected} files included, ${searchMeta.chunksUsed} excerpts). Method: ${searchMeta.selectionMethod || 'full_library'}.`
     : '';
 
   const historyText = history
@@ -169,7 +133,7 @@ export async function generateAnswer(question, history = [], currentDateTime = n
     .map((msg) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`)
     .join('\n');
 
-  const prompt = `${getSystemPrompt(activeCompany)}
+  const prompt = `${SYSTEM_PROMPT}
 
 CURRENT DATE AND TIME: ${nowLabel}
 ${searchedNote ? `\nRESEARCH NOTE: ${searchedNote}\n` : ''}

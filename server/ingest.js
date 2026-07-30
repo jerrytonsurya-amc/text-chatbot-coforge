@@ -3,35 +3,17 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 import pdf from 'pdf-parse/lib/pdf-parse.js';
+import { COMPANY } from '../shared/company.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
 const EXTRACTED_DIR = path.join(ROOT, 'data', 'extracted');
 const INDEX_PATH = path.join(ROOT, 'data', 'knowledge-index.json');
 
-const ZIP_SOURCES = [
-  { zip: 'AR.zip', dest: 'AR' },
-  { zip: 'PPT.zip', dest: 'PPT' },
-  { zip: 'Transcripts.zip', dest: 'Transcripts' },
-];
-
-function extractZips() {
-  for (const { zip, dest } of ZIP_SOURCES) {
-    const zipPath = path.join(ROOT, zip);
-    const destPath = path.join(EXTRACTED_DIR, dest);
-    if (!fs.existsSync(zipPath)) continue;
-    if (fs.existsSync(destPath) && fs.readdirSync(destPath).length > 0) continue;
-
-    fs.mkdirSync(destPath, { recursive: true });
-    console.log(`Extracting ${zip}...`);
-    execSync(`unzip -q -o "${zipPath}" -d "${destPath}"`, { cwd: ROOT });
-  }
-}
-
 const CHUNK_SIZE = 1200;
 const CHUNK_OVERLAP = 200;
 
-function chunkText(text, source, category, company = 'Coforge') {
+function chunkText(text, source, category, company = COMPANY) {
   const cleaned = text.replace(/\s+/g, ' ').trim();
   if (!cleaned) return [];
 
@@ -72,7 +54,7 @@ async function extractPdf(filePath, category, company) {
   return chunkText(data.text, source, category, company);
 }
 
-async function walkPdfs(dir, category, company = 'Coforge') {
+async function walkPdfs(dir, category, company = COMPANY) {
   const chunks = [];
   if (!fs.existsSync(dir)) return chunks;
 
@@ -80,7 +62,7 @@ async function walkPdfs(dir, category, company = 'Coforge') {
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) {
-      chunks.push(...(await walkPdfs(fullPath, category)));
+      chunks.push(...(await walkPdfs(fullPath, category, company)));
     } else if (entry.name.toLowerCase().endsWith('.pdf')) {
       try {
         console.log(`Processing: ${fullPath}`);
@@ -97,32 +79,29 @@ async function walkPdfs(dir, category, company = 'Coforge') {
 }
 
 async function ingest() {
-  console.log('Starting document ingestion...\n');
-  extractZips();
+  console.log('Starting CIFC document ingestion...\n');
 
   const allChunks = [];
 
   const categories = [
-    { dir: path.join(EXTRACTED_DIR, 'AR'), category: 'Annual Reports', company: 'Coforge' },
-    { dir: path.join(EXTRACTED_DIR, 'PPT'), category: 'Investor Presentations', company: 'Coforge' },
-    { dir: path.join(EXTRACTED_DIR, 'Transcripts'), category: 'Earnings Transcripts', company: 'Coforge' },
-    { dir: path.join(EXTRACTED_DIR, 'CIFC', 'AR'), category: 'CIFC Annual Reports', company: 'CIFC' },
-    { dir: path.join(EXTRACTED_DIR, 'CIFC', 'PPT'), category: 'CIFC Investor Presentations', company: 'CIFC' },
-    { dir: path.join(EXTRACTED_DIR, 'CIFC', 'Transcripts'), category: 'CIFC Earnings Transcripts', company: 'CIFC' },
+    { dir: path.join(EXTRACTED_DIR, 'CIFC', 'AR'), category: 'CIFC Annual Reports' },
+    { dir: path.join(EXTRACTED_DIR, 'CIFC', 'PPT'), category: 'CIFC Investor Presentations' },
+    { dir: path.join(EXTRACTED_DIR, 'CIFC', 'Transcripts'), category: 'CIFC Earnings Transcripts' },
   ];
 
-  for (const { dir, category, company } of categories) {
+  for (const { dir, category } of categories) {
     if (!fs.existsSync(dir)) {
       console.log(`\nSkipping missing folder: ${dir}`);
       continue;
     }
     console.log(`\nCategory: ${category}`);
-    const chunks = await walkPdfs(dir, category, company);
+    const chunks = await walkPdfs(dir, category, COMPANY);
     allChunks.push(...chunks);
   }
 
   const index = {
     createdAt: new Date().toISOString(),
+    company: COMPANY,
     totalChunks: allChunks.length,
     categories: [...new Set(allChunks.map((c) => c.category))],
     chunks: allChunks,
@@ -131,9 +110,9 @@ async function ingest() {
   fs.mkdirSync(path.dirname(INDEX_PATH), { recursive: true });
   fs.writeFileSync(INDEX_PATH, JSON.stringify(index, null, 2));
 
-  console.log(`\nDone! Indexed ${allChunks.length} chunks -> ${INDEX_PATH}`);
+  console.log(`\nDone! Indexed ${allChunks.length} CIFC chunks -> ${INDEX_PATH}`);
 
-  console.log('\nBuilding company catalogs...');
+  console.log('\nBuilding CIFC catalog...');
   execSync('node server/build-catalogs.js', { cwd: ROOT, stdio: 'inherit' });
 
   if (process.env.SKIP_EMBED === '1') {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import {
@@ -10,8 +10,7 @@ import {
   addMessage,
 } from './lib/firebase';
 import { sendChatMessage } from './lib/api';
-import { getTabMismatchMessage } from '../shared/companyGuard.js';
-import { COMPANY_IDS } from './lib/companies';
+import { detectCoforgeQuestion, getOutOfScopeMessage } from '../shared/companyGuard.js';
 import './App.css';
 
 function generateTitle(message) {
@@ -22,7 +21,6 @@ function generateTitle(message) {
 
 export default function App() {
   const [threads, setThreads] = useState([]);
-  const [activeCompany, setActiveCompany] = useState('Coforge');
   const [activeThreadId, setActiveThreadId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -41,30 +39,10 @@ export default function App() {
     return unsub;
   }, [activeThreadId]);
 
-  const companyThreads = useMemo(
-    () => threads.filter((thread) => (thread.company || 'Coforge') === activeCompany),
-    [threads, activeCompany]
-  );
-
-  useEffect(() => {
-    if (!activeThreadId) return;
-    const activeThread = threads.find((thread) => thread.id === activeThreadId);
-    if (activeThread && (activeThread.company || 'Coforge') !== activeCompany) {
-      setActiveThreadId(null);
-    }
-  }, [activeCompany, activeThreadId, threads]);
-
-  const handleCompanyChange = useCallback((company) => {
-    if (company === activeCompany) return;
-    setActiveCompany(company);
-    setActiveThreadId(null);
-    setMessages([]);
-  }, [activeCompany]);
-
   const handleNewChat = useCallback(async () => {
-    const id = await createThread('New chat', activeCompany);
+    const id = await createThread('New chat');
     setActiveThreadId(id);
-  }, [activeCompany]);
+  }, []);
 
   const handleSelectThread = useCallback((id) => {
     setActiveThreadId(id);
@@ -81,7 +59,7 @@ export default function App() {
     let threadId = activeThreadId;
 
     if (!threadId) {
-      threadId = await createThread(generateTitle(text), activeCompany);
+      threadId = await createThread(generateTitle(text));
       setActiveThreadId(threadId);
     } else if (messages.length === 0) {
       await updateThreadTitle(threadId, generateTitle(text));
@@ -89,9 +67,8 @@ export default function App() {
 
     await addMessage(threadId, 'user', text);
 
-    const tabMismatch = getTabMismatchMessage(activeCompany, text.trim());
-    if (tabMismatch) {
-      await addMessage(threadId, 'assistant', tabMismatch, []);
+    if (detectCoforgeQuestion(text.trim())) {
+      await addMessage(threadId, 'assistant', getOutOfScopeMessage(), []);
       return;
     }
 
@@ -103,7 +80,7 @@ export default function App() {
         content: m.content,
       }));
 
-      const { answer, sources } = await sendChatMessage(text, history, undefined, activeCompany);
+      const { answer, sources } = await sendChatMessage(text, history);
       await addMessage(threadId, 'assistant', answer, sources || []);
     } catch (err) {
       await addMessage(
@@ -116,22 +93,18 @@ export default function App() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeThreadId, activeCompany, messages]);
+  }, [activeThreadId, messages]);
 
   return (
     <div className="app">
       <Sidebar
-        threads={companyThreads}
+        threads={threads}
         activeThreadId={activeThreadId}
-        activeCompany={activeCompany}
         onSelectThread={handleSelectThread}
         onNewChat={handleNewChat}
         onDeleteThread={handleDeleteThread}
       />
       <ChatArea
-        company={activeCompany}
-        companies={COMPANY_IDS}
-        onCompanyChange={handleCompanyChange}
         messages={messages}
         isLoading={isLoading}
         onSend={handleSend}

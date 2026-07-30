@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { message, history = [], currentDateTime = null, company = 'Coforge' } = req.body;
+    const { message, history = [], currentDateTime = null } = req.body;
 
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ error: 'Message is required' });
@@ -24,11 +24,10 @@ export default async function handler(req, res) {
     const { answer, sources } = await generateAnswer(
       message.trim(),
       history,
-      currentDateTime,
-      company
+      currentDateTime
     );
 
-    console.log(`[chat] ${company} answered in ${Date.now() - started}ms`);
+    console.log(`[chat] CIFC answered in ${Date.now() - started}ms`);
     return res.status(200).json({ answer, sources, runtime: process.env.VERCEL === '1' ? 'vercel' : 'local' });
   } catch (err) {
     console.error(`[chat] failed after ${Date.now() - started}ms:`, err);

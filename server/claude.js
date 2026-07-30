@@ -16,10 +16,9 @@ function getClient() {
 }
 
 export async function generateText(prompt, options = {}) {
-  const isVercel = process.env.VERCEL === '1';
   const response = await getClient().messages.create({
     model: options.model || config.chatModel,
-    max_tokens: options.maxTokens || (isVercel ? 1536 : 4096),
+    max_tokens: options.maxTokens || 4096,
     messages: [{ role: 'user', content: prompt }],
   });
 

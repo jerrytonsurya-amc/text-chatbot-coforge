@@ -28,7 +28,7 @@ export default function ChartModal({ chartData, onClose }) {
     });
 
     const link = document.createElement('a');
-    link.download = `coforge-chart-${Date.now()}.png`;
+    link.download = `cifc-chart-${Date.now()}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };

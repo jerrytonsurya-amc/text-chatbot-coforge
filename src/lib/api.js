@@ -5,13 +5,12 @@ export { getClientDateTime } from './datetime.js';
 export async function sendChatMessage(
   message,
   history = [],
-  currentDateTime = getClientDateTime(),
-  company = 'Coforge'
+  currentDateTime = getClientDateTime()
 ) {
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, history, currentDateTime, company }),
+    body: JSON.stringify({ message, history, currentDateTime }),
   });
 
   if (!res.ok) {

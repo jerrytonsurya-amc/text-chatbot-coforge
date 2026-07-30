@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { COMPANY } from '../shared/company.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, '..');
@@ -41,17 +42,17 @@ function buildCatalogFromChunks(chunks) {
   return [...docs.values()];
 }
 
-function writeMonolithicCatalog(company, chunks) {
+function writeMonolithicCatalog(chunks) {
   const catalog = buildCatalogFromChunks(chunks);
-  const outPath = path.join(CATALOG_DIR, `${company.toLowerCase()}.json`);
+  const outPath = path.join(CATALOG_DIR, 'cifc.json');
   fs.writeFileSync(outPath, JSON.stringify(catalog));
   const sizeMb = (fs.statSync(outPath).size / 1024 / 1024).toFixed(2);
-  console.log(`${company} monolith: ${catalog.length} docs -> ${outPath} (${sizeMb} MB)`);
+  console.log(`CIFC monolith: ${catalog.length} docs -> ${outPath} (${sizeMb} MB)`);
 }
 
-function writeSplitCatalog(company, chunks) {
+function writeSplitCatalog(chunks) {
   const catalog = buildCatalogFromChunks(chunks);
-  const companyDir = path.join(CATALOG_DIR, company.toLowerCase());
+  const companyDir = path.join(CATALOG_DIR, 'cifc');
   const docsDir = path.join(companyDir, 'docs');
   fs.mkdirSync(docsDir, { recursive: true });
 
@@ -97,7 +98,7 @@ function writeSplitCatalog(company, chunks) {
   fs.writeFileSync(
     indexPath,
     JSON.stringify({
-      company,
+      company: COMPANY,
       version: 2,
       documents: indexDocs,
     })
@@ -110,37 +111,29 @@ function writeSplitCatalog(company, chunks) {
     1024
   ).toFixed(2);
 
-  console.log(
-    `${company} split: ${indexDocs.length} docs, index ${indexKb} KB, doc files ${docsMb} MB -> ${companyDir}`
-  );
+  console.log(`CIFC split: ${indexDocs.length} docs, index ${indexKb} KB, doc files ${docsMb} MB -> ${companyDir}`);
 }
 
 function hasCommittedCatalogs() {
-  return (
-    fs.existsSync(path.join(CATALOG_DIR, 'cifc', 'index.json')) &&
-    fs.existsSync(path.join(CATALOG_DIR, 'coforge', 'index.json'))
-  );
+  return fs.existsSync(path.join(CATALOG_DIR, 'cifc', 'index.json'));
 }
 
 function buildCatalogs() {
   if (!fs.existsSync(INDEX_PATH)) {
     if (hasCommittedCatalogs()) {
-      console.log('Knowledge index not found — using committed split catalogs.');
+      console.log('Knowledge index not found — using committed CIFC split catalog.');
       return;
     }
     throw new Error(`Missing ${INDEX_PATH}. Run: npm run ingest:fast`);
   }
 
-  console.log('Building company catalogs...\n');
+  console.log('Building CIFC catalog...\n');
   const index = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8'));
-  const cifcChunks = index.chunks.filter((chunk) => getChunkCompany(chunk) === 'CIFC');
-  const coforgeChunks = index.chunks.filter((chunk) => getChunkCompany(chunk) === 'Coforge');
+  const cifcChunks = index.chunks.filter((chunk) => getChunkCompany(chunk) === COMPANY);
 
   fs.mkdirSync(CATALOG_DIR, { recursive: true });
-  writeSplitCatalog('CIFC', cifcChunks);
-  writeSplitCatalog('Coforge', coforgeChunks);
-  writeMonolithicCatalog('CIFC', cifcChunks);
-  writeMonolithicCatalog('Coforge', coforgeChunks);
+  writeSplitCatalog(cifcChunks);
+  writeMonolithicCatalog(cifcChunks);
   console.log('\nDone.');
 }
 

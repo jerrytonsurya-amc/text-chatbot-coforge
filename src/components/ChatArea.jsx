@@ -10,16 +10,8 @@ function resizeTextarea(textarea) {
   textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
 }
 
-export default function ChatArea({
-  company,
-  companies,
-  onCompanyChange,
-  messages,
-  isLoading,
-  onSend,
-  disabled,
-}) {
-  const config = getCompanyConfig(company);
+export default function ChatArea({ messages, isLoading, onSend, disabled }) {
+  const config = getCompanyConfig();
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const [voiceHint, setVoiceHint] = useState('');
@@ -52,11 +44,6 @@ export default function ChatArea({
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isLoading]);
-
-  useEffect(() => {
-    stopListening();
-    setVoiceHint('');
-  }, [company, stopListening]);
 
   const handleSubmit = (text) => {
     const trimmed = text?.trim();
@@ -92,21 +79,6 @@ export default function ChatArea({
   return (
     <div className="chat-area">
       <div className="chat-header">
-        <div className="company-tabs">
-          {companies.map((companyId) => {
-            const tab = getCompanyConfig(companyId);
-            return (
-              <button
-                key={companyId}
-                type="button"
-                className={`company-tab ${company === companyId ? 'active' : ''}`}
-                onClick={() => onCompanyChange(companyId)}
-              >
-                {tab.tabLabel}
-              </button>
-            );
-          })}
-        </div>
         <div className="chat-header-title">{config.title}</div>
       </div>
 
@@ -139,9 +111,7 @@ export default function ChatArea({
                 sources={msg.sources}
               />
             ))}
-            {isLoading && (
-              <Message role="assistant" isLoading />
-            )}
+            {isLoading && <Message role="assistant" isLoading />}
             <div ref={bottomRef} />
           </>
         )}

@@ -5,8 +5,8 @@
   "functions": {
     "api/chat.js": {
       "maxDuration": 300,
-      "memory": 2048,
-      "includeFiles": "data/catalogs/{cifc,coforge}/**"
+      "memory": 4096,
+      "includeFiles": "data/catalogs/cifc/**"
     },
     "api/health.js": {
       "memory": 512

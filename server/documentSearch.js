@@ -4,25 +4,23 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config.js';
 import { withRetry, isRateLimitError } from './retry.js';
-import { detectQuestionCompany } from '../shared/companyGuard.js';
+import { COMPANY } from '../shared/company.js';
 import { generateText } from './claude.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_PATH = path.join(__dirname, '..', 'data', 'knowledge-index.json');
 const CATALOG_DIR = path.join(__dirname, '..', 'data', 'catalogs');
 
-function getCatalogPath(company) {
-  const key = company === 'CIFC' ? 'cifc' : 'coforge';
-  return path.join(CATALOG_DIR, `${key}.json`);
+function getCatalogPath() {
+  return path.join(CATALOG_DIR, 'cifc.json');
 }
 
-function getSplitCatalogDir(company) {
-  const key = company === 'CIFC' ? 'cifc' : 'coforge';
-  return path.join(CATALOG_DIR, key);
+function getSplitCatalogDir() {
+  return path.join(CATALOG_DIR, 'cifc');
 }
 
-function hasSplitCatalog(company) {
-  return fs.existsSync(path.join(getSplitCatalogDir(company), 'index.json'));
+function hasSplitCatalog() {
+  return fs.existsSync(path.join(getSplitCatalogDir(), 'index.json'));
 }
 
 function getChunkCompany(chunk) {
@@ -60,6 +58,8 @@ function loadIndex() {
     throw new Error('Knowledge index not found. Run: npm run ingest');
   }
   cachedIndex = JSON.parse(fs.readFileSync(INDEX_PATH, 'utf-8'));
+  cachedIndex.chunks = cachedIndex.chunks.filter((chunk) => getChunkCompany(chunk) === COMPANY);
+  cachedIndex.totalChunks = cachedIndex.chunks.length;
   globalThis.__knowledgeIndex = cachedIndex;
   return cachedIndex;
 }
@@ -86,10 +86,8 @@ function expandQueryTokens(queryTokens) {
   return [...expanded];
 }
 
-function detectTargetCompany(query) {
-  const detected = detectQuestionCompany(query);
-  if (detected === 'both') return null;
-  return detected;
+function detectTargetCompany() {
+  return COMPANY;
 }
 
 function getChunkTermSet(chunk) {
@@ -123,30 +121,27 @@ function scoreChunk(chunk, queryTokens, targetCompany = null) {
   return score;
 }
 
-function loadSearchIndex(company) {
-  const normalized = company === 'CIFC' ? 'CIFC' : 'Coforge';
-  const cacheKey = `index:${normalized}`;
+function loadSearchIndex() {
+  const cacheKey = 'index:CIFC';
 
   if (searchIndexCache.has(cacheKey)) {
     return searchIndexCache.get(cacheKey);
   }
 
-  const globalKey = `__searchIndex_${normalized}`;
-  if (globalThis[globalKey]) {
-    searchIndexCache.set(cacheKey, globalThis[globalKey]);
-    return globalThis[globalKey];
+  if (globalThis.__searchIndex_CIFC) {
+    searchIndexCache.set(cacheKey, globalThis.__searchIndex_CIFC);
+    return globalThis.__searchIndex_CIFC;
   }
 
-  const indexPath = path.join(getSplitCatalogDir(normalized), 'index.json');
+  const indexPath = path.join(getSplitCatalogDir(), 'index.json');
   const index = JSON.parse(fs.readFileSync(indexPath, 'utf-8'));
   searchIndexCache.set(cacheKey, index);
-  globalThis[globalKey] = index;
+  globalThis.__searchIndex_CIFC = index;
   return index;
 }
 
-function loadDocumentFile(company, fileName) {
-  const normalized = company === 'CIFC' ? 'CIFC' : 'Coforge';
-  const cacheKey = `${normalized}/${fileName}`;
+function loadDocumentFile(fileName) {
+  const cacheKey = `CIFC/${fileName}`;
 
   if (documentFileCache.has(cacheKey)) {
     return documentFileCache.get(cacheKey);
@@ -158,7 +153,7 @@ function loadDocumentFile(company, fileName) {
     return globalThis[globalKey];
   }
 
-  const docPath = path.join(getSplitCatalogDir(normalized), 'docs', fileName);
+  const docPath = path.join(getSplitCatalogDir(), 'docs', fileName);
   const doc = JSON.parse(fs.readFileSync(docPath, 'utf-8'));
   documentFileCache.set(cacheKey, doc);
   globalThis[globalKey] = doc;
@@ -215,12 +210,12 @@ function scoreDocMeta(docMeta, queryTokens, targetCompany = null) {
   };
 }
 
-function loadAndScoreDocument(company, docMeta, queryTokens, targetCompany) {
-  const loaded = loadDocumentFile(company, docMeta.file);
+function loadAndScoreDocument(docMeta, queryTokens) {
+  const loaded = loadDocumentFile(docMeta.file);
   const scoredChunks = loaded.chunks
     .map((chunk) => ({
       chunk: hydrateChunk(chunk, loaded),
-      score: scoreChunk(hydrateChunk(chunk, loaded), queryTokens, targetCompany),
+      score: scoreChunk(hydrateChunk(chunk, loaded), queryTokens, COMPANY),
     }))
     .sort((a, b) => b.score - a.score);
 
@@ -246,25 +241,24 @@ function loadAndScoreDocument(company, docMeta, queryTokens, targetCompany) {
   };
 }
 
-function scoreFromSplitCatalog(query, targetCompany) {
-  const index = loadSearchIndex(targetCompany);
+function scoreFromSplitCatalog(query) {
+  const index = loadSearchIndex();
   const queryTokens = expandQueryTokens(tokenize(query));
   const ranked = index.documents
-    .map((doc) => scoreDocMeta(doc, queryTokens, targetCompany))
+    .map((doc) => scoreDocMeta(doc, queryTokens, COMPANY))
     .sort((a, b) => b.combinedScore - a.combinedScore);
 
-  const docsToLoad = limitDocumentsForRuntime(ranked, targetCompany);
-  return docsToLoad.map((docMeta) => loadAndScoreDocument(targetCompany, docMeta, queryTokens, targetCompany));
+  return ranked.map((docMeta) => loadAndScoreDocument(docMeta, queryTokens));
 }
 
-function getSplitCatalogDocumentCount(company) {
-  if (!hasSplitCatalog(company)) return null;
-  return loadSearchIndex(company).documents.length;
+function getSplitCatalogDocumentCount() {
+  if (!hasSplitCatalog()) return null;
+  return loadSearchIndex().documents.length;
 }
 
-export function buildDocumentCatalog(company = null) {
-  if (company && hasSplitCatalog(company)) {
-    const index = loadSearchIndex(company);
+export function buildDocumentCatalog() {
+  if (hasSplitCatalog()) {
+    const index = loadSearchIndex();
     return index.documents.map((doc) => ({
       id: doc.id,
       source: doc.source,
@@ -273,10 +267,6 @@ export function buildDocumentCatalog(company = null) {
       chunks: [],
       chunkCount: doc.chunkCount,
     }));
-  }
-
-  if (company) {
-    return loadCompanyCatalog(company);
   }
 
   if (cachedCatalog) return cachedCatalog;
@@ -289,6 +279,7 @@ export function buildDocumentCatalog(company = null) {
   const docs = new Map();
 
   for (const chunk of index.chunks) {
+    if (getChunkCompany(chunk) !== COMPANY) continue;
     const key = `${chunk.source}::${chunk.category}`;
     if (!docs.has(key)) {
       docs.set(key, {
@@ -315,7 +306,7 @@ function loadCompanyCatalog(company) {
     return globalThis[cacheKey];
   }
 
-  const catalogPath = getCatalogPath(normalized);
+  const catalogPath = getCatalogPath();
   if (fs.existsSync(catalogPath)) {
     const catalog = JSON.parse(fs.readFileSync(catalogPath, 'utf-8'));
     globalThis[cacheKey] = catalog;
@@ -345,24 +336,18 @@ function loadCompanyCatalog(company) {
   return catalog;
 }
 
-export function scoreAllDocuments(query, forcedCompany = null) {
-  const targetCompany = forcedCompany || detectTargetCompany(query);
-
-  if (targetCompany && process.env.VERCEL === '1' && hasSplitCatalog(targetCompany)) {
-    return scoreFromSplitCatalog(query, targetCompany);
+export function scoreAllDocuments(query) {
+  if (hasSplitCatalog()) {
+    return scoreFromSplitCatalog(query);
   }
 
-  const catalog = buildDocumentCatalog(targetCompany || undefined);
+  const catalog = buildDocumentCatalog();
   const queryTokens = expandQueryTokens(tokenize(query));
 
-  const filteredCatalog = targetCompany
-    ? catalog
-    : filterDocsByCompany(catalog, targetCompany);
-
-  return filteredCatalog
+  return catalog
     .map((doc) => {
       const scoredChunks = doc.chunks
-        .map((chunk) => ({ chunk, score: scoreChunk(chunk, queryTokens, targetCompany) }))
+        .map((chunk) => ({ chunk, score: scoreChunk(chunk, queryTokens, COMPANY) }))
         .sort((a, b) => b.score - a.score);
 
       const matching = scoredChunks.filter((item) => item.score > 0);
@@ -495,21 +480,18 @@ function limitDocumentsForRuntime(documents, company) {
   return picked;
 }
 
-export async function researchCompanyLibrary(query, company) {
-  const totalDocuments = getSplitCatalogDocumentCount(company);
-  const scoredDocs = scoreAllDocuments(query, company);
-  const documents =
-    totalDocuments != null
-      ? scoredDocs
-      : limitDocumentsForRuntime(filterDocsByCompany(scoredDocs, company), company);
+export async function researchCompanyLibrary(query) {
+  const totalDocuments = getSplitCatalogDocumentCount();
+  const scoredDocs = scoreAllDocuments(query);
+  const documents = scoredDocs;
   const budget = config.maxDirectContextChars;
 
   let maxPerSource = config.maxChunksPerSourceFull;
-  let chunks = pickChunksFromDocuments(documents, query, company, maxPerSource);
+  let chunks = pickChunksFromDocuments(documents, query, COMPANY, maxPerSource);
 
   while (totalChunkChars(chunks) > budget && maxPerSource > 1) {
     maxPerSource -= 1;
-    chunks = pickChunksFromDocuments(documents, query, company, maxPerSource);
+    chunks = pickChunksFromDocuments(documents, query, COMPANY, maxPerSource);
   }
 
   if (totalChunkChars(chunks) > budget) {
@@ -654,8 +636,8 @@ Instructions:
 }
 
 export async function selectRelevantDocuments(query, forcedCompany = null) {
-  const targetCompany = forcedCompany || detectTargetCompany(query);
-  const scoredDocs = scoreAllDocuments(query, targetCompany);
+  const targetCompany = forcedCompany || COMPANY;
+  const scoredDocs = scoreAllDocuments(query);
 
   if (forcedCompany) {
     const documents = filterDocsByCompany(scoredDocs, forcedCompany);

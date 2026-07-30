@@ -13,6 +13,7 @@ import {
   serverTimestamp,
   writeBatch,
 } from 'firebase/firestore';
+import { COMPANY } from '../../shared/company.js';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -53,10 +54,10 @@ export function subscribeToMessages(threadId, callback) {
   });
 }
 
-export async function createThread(title = 'New chat', company = 'Coforge') {
+export async function createThread(title = 'New chat') {
   const ref = await addDoc(collection(db, THREADS), {
     title,
-    company,
+    company: COMPANY,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
